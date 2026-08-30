@@ -7,6 +7,7 @@ use App\Models\Ngo;
 use App\Models\FoodDonation;
 use App\Models\FoodRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class NgoController extends Controller
 {
@@ -145,71 +146,165 @@ class NgoController extends Controller
     */
 
     // GET: /api/ngo/available-donations
-    public function availableDonations(Request $request)
-    {
-        $user = $request->user();
+   // GET: /api/ngo/available-donations
+// JOIN: food_donations + donors + food_requests
+public function availableDonations(Request $request)
+{
+    $user = $request->user();
 
-        if (!$user || $user->role !== 'ngo') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Only NGO users can view available donations.',
-            ], 403);
-        }
-
-        $ngo = Ngo::where('email', $user->email)->first();
-
-        if (!$ngo) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Please complete your NGO profile first.',
-            ], 404);
-        }
-
-        $donations = FoodDonation::with('donor')
-            ->withSum(
-                [
-                    'foodRequests as reserved_qty' => function ($query) {
-                        $query->whereIn(
-                            'request_status',
-                            ['pending', 'approved']
-                        );
-                    },
-                ],
-                'requested_qty'
-            )
-            ->where('availability_status', 'available')
-            ->where('donation_status', 'active')
-            ->where('expiry_at', '>', now())
-            ->orderBy('expiry_at')
-            ->get()
-            ->map(function ($donation) {
-                $reservedQuantity =
-                    (float) ($donation->reserved_qty ?? 0);
-
-                $remainingQuantity = max(
-                    0,
-                    (float) $donation->quantity - $reservedQuantity
-                );
-
-                $donation->setAttribute(
-                    'remaining_qty',
-                    $remainingQuantity
-                );
-
-                return $donation;
-            })
-            ->filter(function ($donation) {
-                return $donation->remaining_qty > 0;
-            })
-            ->values();
-
+    if (!$user || $user->role !== 'ngo') {
         return response()->json([
-            'success' => true,
-            'message' =>
-                'Available food donations retrieved successfully',
-            'data' => $donations,
-        ]);
+            'success' => false,
+            'message' => 'Only NGO users can view available donations.',
+        ], 403);
     }
+
+    $ngo = Ngo::where('email', $user->email)->first();
+
+    if (!$ngo) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Please complete your NGO profile first.',
+        ], 404);
+    }
+
+    /*
+     * DATABASE JOIN
+     *
+     * food_donations
+     *      JOIN donors
+     *      LEFT JOIN food_requests
+     *
+     * LEFT JOIN is used for food_requests because a donation
+     * should still appear even when nobody has requested it yet.
+     */
+    $donations = DB::table('food_donations')
+        ->join(
+            'donors',
+            'food_donations.donor_id',
+            '=',
+            'donors.id'
+        )
+        ->leftJoin('food_requests', function ($join) {
+            $join->on(
+                'food_donations.id',
+                '=',
+                'food_requests.donation_id'
+            )
+            ->whereIn(
+                'food_requests.request_status',
+                ['pending', 'approved']
+            );
+        })
+        ->where(
+            'food_donations.availability_status',
+            'available'
+        )
+        ->where(
+            'food_donations.donation_status',
+            'active'
+        )
+        ->where(
+            'food_donations.expiry_at',
+            '>',
+            now()
+        )
+        ->select(
+            'food_donations.id',
+            'food_donations.donor_id',
+            'food_donations.food_name',
+            'food_donations.food_category',
+            'food_donations.quantity',
+            'food_donations.unit',
+            'food_donations.prepared_at',
+            'food_donations.expiry_at',
+            'food_donations.availability_status',
+            'food_donations.donation_status',
+
+            'donors.id as joined_donor_id',
+            'donors.donor_name',
+            'donors.donor_type',
+            'donors.email as donor_email',
+            'donors.phone as donor_phone',
+            'donors.address as donor_address',
+
+            DB::raw(
+                'COALESCE(SUM(food_requests.requested_qty), 0) as reserved_qty'
+            ),
+
+            DB::raw(
+                '(food_donations.quantity - COALESCE(SUM(food_requests.requested_qty), 0)) as remaining_qty'
+            )
+        )
+        ->groupBy(
+            'food_donations.id',
+            'food_donations.donor_id',
+            'food_donations.food_name',
+            'food_donations.food_category',
+            'food_donations.quantity',
+            'food_donations.unit',
+            'food_donations.prepared_at',
+            'food_donations.expiry_at',
+            'food_donations.availability_status',
+            'food_donations.donation_status',
+
+            'donors.id',
+            'donors.donor_name',
+            'donors.donor_type',
+            'donors.email',
+            'donors.phone',
+            'donors.address'
+        )
+        ->havingRaw(
+            '(food_donations.quantity - COALESCE(SUM(food_requests.requested_qty), 0)) > 0'
+        )
+        ->orderBy(
+            'food_donations.expiry_at'
+        )
+        ->get();
+
+    /*
+     * Keep the API response compatible with NgoPage.tsx.
+     */
+    $donations = $donations->map(function ($row) {
+        return [
+            'id' => $row->id,
+            'donor_id' => $row->donor_id,
+            'food_name' => $row->food_name,
+            'food_category' => $row->food_category,
+            'quantity' => $row->quantity,
+            'unit' => $row->unit,
+            'prepared_at' => $row->prepared_at,
+            'expiry_at' => $row->expiry_at,
+            'availability_status' =>
+                $row->availability_status,
+            'donation_status' =>
+                $row->donation_status,
+
+            'reserved_qty' =>
+                $row->reserved_qty,
+
+            'remaining_qty' =>
+                $row->remaining_qty,
+
+            'donor' => [
+                'id' => $row->joined_donor_id,
+                'donor_name' => $row->donor_name,
+                'donor_type' => $row->donor_type,
+                'email' => $row->donor_email,
+                'phone' => $row->donor_phone,
+                'address' => $row->donor_address,
+            ],
+        ];
+    });
+
+    return response()->json([
+        'success' => true,
+        'message' =>
+            'Available food donations retrieved successfully using database joins',
+        'data' => $donations,
+    ]);
+}
 
 
     /*
@@ -219,43 +314,148 @@ class NgoController extends Controller
     */
 
     // GET: /api/ngo/requests
-    public function myRequests(Request $request)
-    {
-        $user = $request->user();
+    // GET: /api/ngo/requests
+// JOIN: food_requests + ngos + food_donations + donors
+public function myRequests(Request $request)
+{
+    $user = $request->user();
 
-        if (!$user || $user->role !== 'ngo') {
-            return response()->json([
-                'success' => false,
-                'message' =>
-                    'Only NGO users can view food requests.',
-            ], 403);
-        }
-
-        $ngo = Ngo::where('email', $user->email)->first();
-
-        if (!$ngo) {
-            return response()->json([
-                'success' => false,
-                'message' => 'NGO profile not found.',
-            ], 404);
-        }
-
-        $foodRequests = FoodRequest::with([
-            'donation.donor',
-        ])
-            ->where('ngo_id', $ngo->id)
-            ->latest('requested_at')
-            ->get();
-
+    if (!$user || $user->role !== 'ngo') {
         return response()->json([
-            'success' => true,
+            'success' => false,
             'message' =>
-                'Your food requests retrieved successfully',
-            'data' => $foodRequests,
-        ]);
+                'Only NGO users can view food requests.',
+        ], 403);
     }
 
+    $ngo = Ngo::where(
+        'email',
+        $user->email
+    )->first();
 
+    if (!$ngo) {
+        return response()->json([
+            'success' => false,
+            'message' => 'NGO profile not found.',
+        ], 404);
+    }
+
+    /*
+     * DATABASE INNER JOIN
+     *
+     * food_requests
+     *      JOIN ngos
+     *      JOIN food_donations
+     *      JOIN donors
+     */
+    $rows = DB::table('food_requests')
+        ->join(
+            'ngos',
+            'food_requests.ngo_id',
+            '=',
+            'ngos.id'
+        )
+        ->join(
+            'food_donations',
+            'food_requests.donation_id',
+            '=',
+            'food_donations.id'
+        )
+        ->join(
+            'donors',
+            'food_donations.donor_id',
+            '=',
+            'donors.id'
+        )
+        ->where(
+            'food_requests.ngo_id',
+            $ngo->id
+        )
+        ->select(
+            'food_requests.id',
+            'food_requests.ngo_id',
+            'food_requests.donation_id',
+            'food_requests.requested_qty',
+            'food_requests.requested_at',
+            'food_requests.request_status',
+
+            'ngos.ngo_name',
+
+            'food_donations.food_name',
+            'food_donations.food_category',
+            'food_donations.quantity as donation_quantity',
+            'food_donations.unit',
+            'food_donations.prepared_at',
+            'food_donations.expiry_at',
+
+            'donors.id as donor_id',
+            'donors.donor_name',
+            'donors.donor_type',
+            'donors.email as donor_email',
+            'donors.phone as donor_phone',
+            'donors.address as donor_address'
+        )
+        ->orderByDesc(
+            'food_requests.requested_at'
+        )
+        ->get();
+
+    /*
+     * Convert flat JOIN output into the same nested
+     * structure expected by the React NGO dashboard.
+     */
+    $foodRequests = $rows->map(function ($row) {
+        return [
+            'id' => $row->id,
+            'ngo_id' => $row->ngo_id,
+            'ngo_name' => $row->ngo_name,
+            'donation_id' =>
+                $row->donation_id,
+            'requested_qty' =>
+                $row->requested_qty,
+            'requested_at' =>
+                $row->requested_at,
+            'request_status' =>
+                $row->request_status,
+
+            'donation' => [
+                'id' => $row->donation_id,
+                'food_name' =>
+                    $row->food_name,
+                'food_category' =>
+                    $row->food_category,
+                'quantity' =>
+                    $row->donation_quantity,
+                'unit' => $row->unit,
+                'prepared_at' =>
+                    $row->prepared_at,
+                'expiry_at' =>
+                    $row->expiry_at,
+
+                'donor' => [
+                    'id' => $row->donor_id,
+                    'donor_name' =>
+                        $row->donor_name,
+                    'donor_type' =>
+                        $row->donor_type,
+                    'email' =>
+                        $row->donor_email,
+                    'phone' =>
+                        $row->donor_phone,
+                    'address' =>
+                        $row->donor_address,
+                ],
+            ],
+        ];
+    });
+
+    return response()->json([
+        'success' => true,
+        'message' =>
+            'Your food requests retrieved successfully using database joins',
+        'data' => $foodRequests,
+    ]);
+}
     // POST: /api/ngo/requests
     public function requestFood(Request $request)
     {
