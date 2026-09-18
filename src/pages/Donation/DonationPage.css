@@ -27,9 +27,15 @@
   position: sticky;
   top: 0;
   z-index: 20;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
   background: rgba(255, 255, 255, 0.92);
   border-bottom: 1px solid rgba(223, 233, 224, 0.9);
   backdrop-filter: blur(18px);
+
   padding: 0 24px;
 }
 
@@ -537,10 +543,41 @@
     grid-template-columns: 1fr;
   }
 }
-.donation-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* Logout button */
+.donation-page .logout-button {
+  width: auto;
+  min-width: 88px;
+  height: 40px;
+
+  margin-left: auto;
+  padding: 0 16px;
+
+  border: 1px solid var(--green);
+  border-radius: 9px;
+
+  background: var(--green);
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.donation-page .logout-button { border: 1px solid var(--green); border-radius: 10px; padding: 10px 20px; background: var(--green); color: #ffffff; font-size: 14px; font-weight: 700; cursor: pointer; transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease; } .donation-page .logout-button:hover { background: var(--green-dark); border-color: var(--green-dark); transform: translateY(-1px); box-shadow: 0 7px 18px rgba(22, 131, 75, 0.18); } .donation-page .logout-button:active { transform: translateY(0); }
+.donation-page .logout-button:hover {
+  background: var(--green-dark);
+  border-color: var(--green-dark);
+
+  transform: translateY(-1px);
+
+  box-shadow: 0 6px 16px rgba(22, 131, 75, 0.18);
+}
+
+.donation-page .logout-button:active {
+  transform: translateY(0);
+}
