@@ -337,10 +337,10 @@
 ========================= */
 
 .section-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  position: relative;
+  width: 100%;
   margin-bottom: 20px;
+  padding-right: 190px;
 }
 
 .section-heading h2 {
@@ -361,6 +361,52 @@
 
 .section-label {
   margin-bottom: 5px;
+}
+
+
+/* =========================
+   DASHBOARD FILTERS
+========================= */
+
+.dashboard-filter {
+  position: absolute;
+  top: 0;
+  right: 0;
+
+  width: 170px;
+  min-width: 170px;
+
+  padding: 10px 34px 10px 12px;
+
+  border: 1px solid #dfe7e1;
+  border-radius: 9px;
+
+  background: #ffffff;
+  color: #344239;
+
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+
+  cursor: pointer;
+  outline: none;
+
+  transition: all 0.2s ease;
+}
+
+.dashboard-filter:hover {
+  border-color: #a9bcae;
+  background: #fafcfb;
+}
+
+.dashboard-filter:focus {
+  border-color: #66816f;
+  box-shadow: 0 0 0 3px rgba(102, 129, 111, 0.1);
+}
+
+.dashboard-filter option {
+  color: #344239;
+  background: #ffffff;
 }
 
 
@@ -801,90 +847,6 @@ tbody tr:hover {
 
 
 /* =========================
-   RESPONSIVE
-========================= */
-
-@media (max-width: 1250px) {
-  .summary-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .status-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-
-@media (max-width: 950px) {
-  .admin-sidebar {
-    width: 210px;
-  }
-
-  .admin-main {
-    margin-left: 210px;
-    width: calc(100% - 210px);
-    padding: 28px;
-  }
-
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-
-@media (max-width: 700px) {
-  .admin-sidebar {
-    display: none;
-  }
-
-  .admin-main {
-    margin-left: 0;
-    width: 100%;
-    padding: 20px;
-  }
-
-  .summary-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .admin-header {
-    flex-direction: column;
-    gap: 15px;
-  }
-
-  .verification-container {
-    grid-template-columns: 1fr;
-  }
-
-  .status-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .admin-footer {
-    flex-direction: column;
-    gap: 5px;
-  }
-}
-
-
-@media (max-width: 450px) {
-  .summary-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .dashboard-card {
-    padding: 18px;
-  }
-
-  .status-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-header h1 {
-    font-size: 27px;
-  }
-}
-/* =========================
    NGO MANAGEMENT
 ========================= */
 
@@ -955,4 +917,102 @@ tbody tr:hover {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1250px) {
+  .summary-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .status-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+
+@media (max-width: 950px) {
+  .admin-sidebar {
+    width: 210px;
+  }
+
+  .admin-main {
+    margin-left: 210px;
+    width: calc(100% - 210px);
+    padding: 28px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+@media (max-width: 700px) {
+  .admin-sidebar {
+    display: none;
+  }
+
+  .admin-main {
+    margin-left: 0;
+    width: 100%;
+    padding: 20px;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-header {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .verification-container {
+    grid-template-columns: 1fr;
+  }
+
+  .status-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-footer {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  /* FILTERS ON MOBILE */
+  .section-heading {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .dashboard-filter {
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
+  }
+}
+
+
+@media (max-width: 450px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-card {
+    padding: 18px;
+  }
+
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-header h1 {
+    font-size: 27px;
+  }
 }

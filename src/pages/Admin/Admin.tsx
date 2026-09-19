@@ -109,6 +109,18 @@ function Admin() {
   const [ngoError, setNgoError] = useState("");
 
   // ======================================================
+  // DASHBOARD FILTERS
+  // ======================================================
+
+  const [ngoFilter, setNgoFilter] = useState("all");
+  const [donationCategoryFilter, setDonationCategoryFilter] =
+    useState("all");
+  const [requestStatusFilter, setRequestStatusFilter] =
+    useState("all");
+  const [deliveryStatusFilter, setDeliveryStatusFilter] =
+    useState("all");
+
+  // ======================================================
   // LOAD DASHBOARD + NGOs
   // ======================================================
 
@@ -305,6 +317,81 @@ function Admin() {
 
   const { summary } = dashboard;
 
+  // ======================================================
+  // FILTER NGO APPLICATIONS
+  // ======================================================
+
+  const filteredNgos = ngos.filter((ngo) => {
+    if (ngoFilter === "verified") return ngo.is_verified;
+    if (ngoFilter === "pending") return !ngo.is_verified;
+
+    return true;
+  });
+
+  // ======================================================
+  // FILTER DONATIONS BY CATEGORY
+  // ======================================================
+
+  const filteredDonationsByCategory =
+    donationCategoryFilter === "all"
+      ? dashboard.donations_by_category
+      : dashboard.donations_by_category.filter(
+          (item) =>
+            item.food_category === donationCategoryFilter
+        );
+
+  // ======================================================
+  // FILTER REQUESTS BY STATUS
+  // ======================================================
+
+  const filteredRequestDetails =
+    requestStatusFilter === "all"
+      ? dashboard.request_details
+      : dashboard.request_details.filter(
+          (request) =>
+            request.request_status === requestStatusFilter
+        );
+
+  // ======================================================
+  // FILTER DELIVERIES BY STATUS
+  // ======================================================
+
+  const filteredDeliveryStatuses =
+    deliveryStatusFilter === "all"
+      ? dashboard.deliveries_by_status
+      : dashboard.deliveries_by_status.filter(
+          (item) =>
+            item.delivery_status === deliveryStatusFilter
+        );
+
+  // ======================================================
+  // FILTER OPTIONS
+  // ======================================================
+
+  const donationCategories = Array.from(
+    new Set(
+      dashboard.donations_by_category.map(
+        (item) => item.food_category
+      )
+    )
+  );
+
+  const requestStatuses = Array.from(
+    new Set(
+      dashboard.request_details.map(
+        (item) => item.request_status
+      )
+    )
+  );
+
+  const deliveryStatuses = Array.from(
+    new Set(
+      dashboard.deliveries_by_status.map(
+        (item) => item.delivery_status
+      )
+    )
+  );
+
   return (
     <div className="admin-page">
 
@@ -326,7 +413,6 @@ function Admin() {
           </div>
 
         </div>
-
 
         <nav className="admin-nav">
 
@@ -362,7 +448,6 @@ function Admin() {
 
         </nav>
 
-
         {/* SIDEBAR BOTTOM */}
 
         <div className="admin-sidebar-bottom">
@@ -387,7 +472,6 @@ function Admin() {
 
           </div>
 
-
           <button
             className="logout-button"
             onClick={handleLogout}
@@ -399,7 +483,6 @@ function Admin() {
         </div>
 
       </aside>
-
 
       {/* ==================================================
           MAIN
@@ -431,7 +514,6 @@ function Admin() {
 
           </div>
 
-
           <div className="header-status">
 
             <span className="status-dot"></span>
@@ -441,7 +523,6 @@ function Admin() {
           </div>
 
         </header>
-
 
         {/* ==================================================
             SUMMARY CARDS
@@ -462,7 +543,6 @@ function Admin() {
 
           </div>
 
-
           <div className="summary-card">
 
             <div className="card-icon">
@@ -475,7 +555,6 @@ function Admin() {
             </div>
 
           </div>
-
 
           <div className="summary-card">
 
@@ -490,7 +569,6 @@ function Admin() {
 
           </div>
 
-
           <div className="summary-card">
 
             <div className="card-icon">
@@ -504,7 +582,6 @@ function Admin() {
 
           </div>
 
-
           <div className="summary-card">
 
             <div className="card-icon">
@@ -517,7 +594,6 @@ function Admin() {
             </div>
 
           </div>
-
 
           <div className="summary-card">
 
@@ -533,7 +609,6 @@ function Admin() {
           </div>
 
         </section>
-
 
         {/* ==================================================
             DONATIONS + NGO VERIFICATION SUMMARY
@@ -566,8 +641,32 @@ function Admin() {
 
               </div>
 
-            </div>
+              {/* DONATION CATEGORY FILTER */}
 
+              <select
+                className="dashboard-filter"
+                value={donationCategoryFilter}
+                onChange={(e) =>
+                  setDonationCategoryFilter(e.target.value)
+                }
+              >
+
+                <option value="all">
+                  All Categories
+                </option>
+
+                {donationCategories.map((category) => (
+                  <option
+                    key={category}
+                    value={category}
+                  >
+                    {category}
+                  </option>
+                ))}
+
+              </select>
+
+            </div>
 
             {dashboard.donations_by_category.length === 0 ? (
 
@@ -575,11 +674,17 @@ function Admin() {
                 No donation data available.
               </p>
 
+            ) : filteredDonationsByCategory.length === 0 ? (
+
+              <p className="empty-message">
+                No donations match this category.
+              </p>
+
             ) : (
 
               <div className="category-list">
 
-                {dashboard.donations_by_category.map(
+                {filteredDonationsByCategory.map(
                   (item) => (
 
                     <div
@@ -625,7 +730,6 @@ function Admin() {
 
           </div>
 
-
           {/* NGO VERIFICATION SUMMARY */}
 
           <div
@@ -653,7 +757,6 @@ function Admin() {
 
             </div>
 
-
             <div className="verification-container">
 
               <div className="verification-box verified">
@@ -673,7 +776,6 @@ function Admin() {
                 </div>
 
               </div>
-
 
               <div className="verification-box pending">
 
@@ -698,7 +800,6 @@ function Admin() {
           </div>
 
         </section>
-
 
         {/* ==================================================
             NGO MANAGEMENT
@@ -725,8 +826,31 @@ function Admin() {
 
             </div>
 
-          </div>
+            {/* NGO FILTER */}
 
+            <select
+              className="dashboard-filter"
+              value={ngoFilter}
+              onChange={(e) =>
+                setNgoFilter(e.target.value)
+              }
+            >
+
+              <option value="all">
+                All NGOs
+              </option>
+
+              <option value="verified">
+                Verified NGOs
+              </option>
+
+              <option value="pending">
+                Pending NGOs
+              </option>
+
+            </select>
+
+          </div>
 
           {ngoError && (
 
@@ -735,7 +859,6 @@ function Admin() {
             </div>
 
           )}
-
 
           {ngos.length === 0 ? (
 
@@ -758,147 +881,151 @@ function Admin() {
 
             <div className="ngo-table-wrapper">
 
-              <table className="ngo-table">
+              {filteredNgos.length === 0 ? (
 
-                <thead>
+                <p className="empty-message">
+                  No NGOs match this filter.
+                </p>
 
-                  <tr>
+              ) : (
 
-                    <th>NGO</th>
+                <table className="ngo-table">
 
-                    <th>Registration</th>
+                  <thead>
 
-                    <th>Email</th>
+                    <tr>
 
-                    <th>Status</th>
-
-                    <th>Action</th>
-
-                  </tr>
-
-                </thead>
-
-
-                <tbody>
-
-                  {ngos.map((ngo) => (
-
-                    <tr key={ngo.id}>
-
-                      <td>
-
-                        <div className="ngo-name-cell">
-
-                          <div className="ngo-table-avatar">
-                            {ngo.ngo_name
-                              .charAt(0)
-                              .toUpperCase()}
-                          </div>
-
-                          <div>
-
-                            <strong>
-                              {ngo.ngo_name}
-                            </strong>
-
-                            <small>
-                              {ngo.phone}
-                            </small>
-
-                          </div>
-
-                        </div>
-
-                      </td>
-
-
-                      <td>
-                        {ngo.registration_no}
-                      </td>
-
-
-                      <td>
-                        {ngo.email}
-                      </td>
-
-
-                      <td>
-
-                        {ngo.is_verified ? (
-
-                          <span className="ngo-status verified-status">
-                            ✓ Verified
-                          </span>
-
-                        ) : (
-
-                          <span className="ngo-status pending-status">
-                            ! Pending
-                          </span>
-
-                        )}
-
-                      </td>
-
-
-                      <td>
-
-                        {ngo.is_verified ? (
-
-                          <button
-                            className="ngo-action-button unverify-button"
-                            disabled={ngoLoading === ngo.id}
-                            onClick={() =>
-                              handleNgoVerification(
-                                ngo.id,
-                                false
-                              )
-                            }
-                          >
-
-                            {ngoLoading === ngo.id
-                              ? "Updating..."
-                              : "Set Pending"}
-
-                          </button>
-
-                        ) : (
-
-                          <button
-                            className="ngo-action-button verify-button"
-                            disabled={ngoLoading === ngo.id}
-                            onClick={() =>
-                              handleNgoVerification(
-                                ngo.id,
-                                true
-                              )
-                            }
-                          >
-
-                            {ngoLoading === ngo.id
-                              ? "Verifying..."
-                              : "Verify NGO"}
-
-                          </button>
-
-                        )}
-
-                      </td>
+                      <th>NGO</th>
+                      <th>Registration</th>
+                      <th>Email</th>
+                      <th>Status</th>
+                      <th>Action</th>
 
                     </tr>
 
-                  ))}
+                  </thead>
 
-                </tbody>
+                  <tbody>
 
-              </table>
+                    {filteredNgos.map((ngo) => (
+
+                      <tr key={ngo.id}>
+
+                        <td>
+
+                          <div className="ngo-name-cell">
+
+                            <div className="ngo-table-avatar">
+                              {ngo.ngo_name
+                                .charAt(0)
+                                .toUpperCase()}
+                            </div>
+
+                            <div>
+
+                              <strong>
+                                {ngo.ngo_name}
+                              </strong>
+
+                              <small>
+                                {ngo.phone}
+                              </small>
+
+                            </div>
+
+                          </div>
+
+                        </td>
+
+                        <td>
+                          {ngo.registration_no}
+                        </td>
+
+                        <td>
+                          {ngo.email}
+                        </td>
+
+                        <td>
+
+                          {ngo.is_verified ? (
+
+                            <span className="ngo-status verified-status">
+                              ✓ Verified
+                            </span>
+
+                          ) : (
+
+                            <span className="ngo-status pending-status">
+                              ! Pending
+                            </span>
+
+                          )}
+
+                        </td>
+
+                        <td>
+
+                          {ngo.is_verified ? (
+
+                            <button
+                              className="ngo-action-button unverify-button"
+                              disabled={
+                                ngoLoading === ngo.id
+                              }
+                              onClick={() =>
+                                handleNgoVerification(
+                                  ngo.id,
+                                  false
+                                )
+                              }
+                            >
+
+                              {ngoLoading === ngo.id
+                                ? "Updating..."
+                                : "Set Pending"}
+
+                            </button>
+
+                          ) : (
+
+                            <button
+                              className="ngo-action-button verify-button"
+                              disabled={
+                                ngoLoading === ngo.id
+                              }
+                              onClick={() =>
+                                handleNgoVerification(
+                                  ngo.id,
+                                  true
+                                )
+                              }
+                            >
+
+                              {ngoLoading === ngo.id
+                                ? "Verifying..."
+                                : "Verify NGO"}
+
+                            </button>
+
+                          )}
+
+                        </td>
+
+                      </tr>
+
+                    ))}
+
+                  </tbody>
+
+                </table>
+
+              )}
 
             </div>
 
           )}
 
         </section>
-
 
         {/* ==================================================
             DONATIONS BY DONOR
@@ -926,7 +1053,6 @@ function Admin() {
 
           </div>
 
-
           <div className="table-wrapper">
 
             <table>
@@ -940,7 +1066,6 @@ function Admin() {
                 </tr>
 
               </thead>
-
 
               <tbody>
 
@@ -978,7 +1103,6 @@ function Admin() {
 
         </section>
 
-
         {/* ==================================================
             REQUESTS + VOLUNTEERS
         ================================================== */}
@@ -1011,7 +1135,6 @@ function Admin() {
               </div>
 
             </div>
-
 
             {dashboard.requests_by_ngo.length === 0 ? (
 
@@ -1058,7 +1181,6 @@ function Admin() {
 
           </div>
 
-
           {/* VOLUNTEERS */}
 
           <div
@@ -1085,7 +1207,6 @@ function Admin() {
               </div>
 
             </div>
-
 
             {dashboard.volunteer_workload.length === 0 ? (
 
@@ -1129,7 +1250,6 @@ function Admin() {
 
                       </div>
 
-
                       <span className="delivery-count">
                         {volunteer.total_deliveries} deliveries
                       </span>
@@ -1146,7 +1266,6 @@ function Admin() {
           </div>
 
         </section>
-
 
         {/* ==================================================
             DELIVERY STATUS
@@ -1175,8 +1294,34 @@ function Admin() {
 
             </div>
 
-          </div>
+            {/* DELIVERY FILTER */}
 
+            <select
+              className="dashboard-filter"
+              value={deliveryStatusFilter}
+              onChange={(e) =>
+                setDeliveryStatusFilter(e.target.value)
+              }
+            >
+
+              <option value="all">
+                All Delivery Statuses
+              </option>
+
+              {deliveryStatuses.map((status) => (
+
+                <option
+                  key={status}
+                  value={status}
+                >
+                  {status}
+                </option>
+
+              ))}
+
+            </select>
+
+          </div>
 
           {dashboard.deliveries_by_status.length === 0 ? (
 
@@ -1195,11 +1340,17 @@ function Admin() {
 
             </div>
 
+          ) : filteredDeliveryStatuses.length === 0 ? (
+
+            <p className="empty-message">
+              No deliveries match this status.
+            </p>
+
           ) : (
 
             <div className="status-grid">
 
-              {dashboard.deliveries_by_status.map(
+              {filteredDeliveryStatuses.map(
                 (item, index) => (
 
                   <div
@@ -1234,7 +1385,6 @@ function Admin() {
 
         </section>
 
-
         {/* ==================================================
             RECENT REQUESTS
         ================================================== */}
@@ -1259,8 +1409,34 @@ function Admin() {
 
             </div>
 
-          </div>
+            {/* REQUEST STATUS FILTER */}
 
+            <select
+              className="dashboard-filter"
+              value={requestStatusFilter}
+              onChange={(e) =>
+                setRequestStatusFilter(e.target.value)
+              }
+            >
+
+              <option value="all">
+                All Request Statuses
+              </option>
+
+              {requestStatuses.map((status) => (
+
+                <option
+                  key={status}
+                  value={status}
+                >
+                  {status}
+                </option>
+
+              ))}
+
+            </select>
+
+          </div>
 
           {dashboard.request_details.length === 0 ? (
 
@@ -1277,6 +1453,12 @@ function Admin() {
               </p>
 
             </div>
+
+          ) : filteredRequestDetails.length === 0 ? (
+
+            <p className="empty-message">
+              No requests match this status.
+            </p>
 
           ) : (
 
@@ -1296,10 +1478,9 @@ function Admin() {
 
                 </thead>
 
-
                 <tbody>
 
-                  {dashboard.request_details.map(
+                  {filteredRequestDetails.map(
                     (request) => (
 
                       <tr key={request.id}>
@@ -1342,7 +1523,6 @@ function Admin() {
           )}
 
         </section>
-
 
         {/* ==================================================
             FOOTER
