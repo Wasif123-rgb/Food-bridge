@@ -5,12 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Ngo;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class AdminController extends Controller
 {
     // ==========================================
     // CREATE REQUIRED DATABASE OBJECTS
-    // VIEW + STORED PROCEDURE
+    // VIEW + STORED PROCEDURE + TRIGGERS
     // ==========================================
 
     private function ensureDatabaseObjects(): void
@@ -91,6 +92,82 @@ class AdminController extends Controller
                 END
             ");
         }
+
+
+        // ==========================================
+        // CHECK NGO VERIFICATION TRIGGER
+        // ==========================================
+
+        $triggerExists = DB::selectOne("
+            SELECT COUNT(*) AS total
+            FROM information_schema.TRIGGERS
+            WHERE TRIGGER_SCHEMA = DATABASE()
+              AND TRIGGER_NAME = 'prevent_verified_ngo_downgrade'
+        ");
+
+
+        // ==========================================
+        // CREATE NGO VERIFICATION TRIGGER IF MISSING
+        // ==========================================
+
+        if ((int) $triggerExists->total === 0) {
+
+            DB::unprepared("
+                CREATE TRIGGER prevent_verified_ngo_downgrade
+                BEFORE UPDATE ON ngos
+                FOR EACH ROW
+                BEGIN
+
+                    IF OLD.is_verified = 1
+                       AND NEW.is_verified = 0 THEN
+
+                        SIGNAL SQLSTATE '45000'
+                        SET MESSAGE_TEXT =
+                            'A verified NGO cannot be changed back to pending.';
+
+                    END IF;
+
+                END
+            ");
+        }
+
+
+        // ==========================================
+        // CHECK DELIVERY STATUS TRIGGER
+        // ==========================================
+
+        $deliveryTriggerExists = DB::selectOne("
+            SELECT COUNT(*) AS total
+            FROM information_schema.TRIGGERS
+            WHERE TRIGGER_SCHEMA = DATABASE()
+              AND TRIGGER_NAME = 'prevent_delivered_status_downgrade'
+        ");
+
+
+        // ==========================================
+        // CREATE DELIVERY STATUS TRIGGER IF MISSING
+        // ==========================================
+
+        if ((int) $deliveryTriggerExists->total === 0) {
+
+            DB::unprepared("
+                CREATE TRIGGER prevent_delivered_status_downgrade
+                BEFORE UPDATE ON deliveries
+                FOR EACH ROW
+                BEGIN
+
+                    IF OLD.delivery_status = 'delivered'
+                       AND NEW.delivery_status <> 'delivered' THEN
+
+                        SIGNAL SQLSTATE '45000'
+                        SET MESSAGE_TEXT =
+                            'A delivered delivery cannot be changed back to another status.';
+
+                    END IF;
+
+                END
+            ");
+        }
     }
 
 
@@ -100,7 +177,8 @@ class AdminController extends Controller
 
     public function dashboard()
     {
-        // Make sure View and Stored Procedure exist.
+        // Make sure View, Stored Procedure
+        // and Triggers exist.
         $this->ensureDatabaseObjects();
 
 
@@ -157,7 +235,6 @@ class AdminController extends Controller
 
         // ==========================================
         // 2. NGO VERIFICATION
-        // RAW SQL
         // ==========================================
 
         $verifiedNgos = DB::selectOne("
@@ -176,7 +253,6 @@ class AdminController extends Controller
 
         // ==========================================
         // 3. NGO LIST
-        // RAW SQL
         // ==========================================
 
         $ngos = DB::select("
@@ -213,7 +289,6 @@ class AdminController extends Controller
 
         // ==========================================
         // 5. DONATIONS BY DONOR
-        // RAW SQL + LEFT JOIN + GROUP BY
         // ==========================================
 
         $donationsByDonor = DB::select("
@@ -251,7 +326,6 @@ class AdminController extends Controller
 
         // ==========================================
         // 6. REQUESTS BY NGO
-        // RAW SQL + LEFT JOIN + GROUP BY
         // ==========================================
 
         $requestsByNgo = DB::select("
@@ -282,7 +356,6 @@ class AdminController extends Controller
 
         // ==========================================
         // 7. REQUESTS BY STATUS
-        // RAW SQL + GROUP BY
         // ==========================================
 
         $requestsByStatus = DB::select("
@@ -300,7 +373,6 @@ class AdminController extends Controller
 
         // ==========================================
         // 8. DELIVERIES BY STATUS
-        // RAW SQL + GROUP BY
         // ==========================================
 
         $deliveriesByStatus = DB::select("
@@ -318,7 +390,6 @@ class AdminController extends Controller
 
         // ==========================================
         // 9. VOLUNTEER WORKLOAD
-        // RAW SQL + LEFT JOIN + GROUP BY
         // ==========================================
 
         $volunteerWorkload = DB::select("
@@ -355,7 +426,6 @@ class AdminController extends Controller
 
         // ==========================================
         // 10. RECIPIENTS BY NGO
-        // RAW SQL + LEFT JOIN + GROUP BY
         // ==========================================
 
         $recipientsByNgo = DB::select("
@@ -395,7 +465,6 @@ class AdminController extends Controller
 
         // ==========================================
         // 11. DONATION REQUEST DETAILS
-        // RAW SQL + JOIN
         // ==========================================
 
         $requestDetails = DB::select("
@@ -440,7 +509,6 @@ class AdminController extends Controller
 
         // ==========================================
         // 12. RECENT DELIVERIES
-        // RAW SQL + MULTIPLE JOINS
         // ==========================================
 
         $recentDeliveries = DB::select("
@@ -494,11 +562,7 @@ class AdminController extends Controller
 
             'success' => true,
 
-
-            // ======================================
             // SUMMARY
-            // ======================================
-
             'summary' => [
 
                 'donors' =>
@@ -524,10 +588,7 @@ class AdminController extends Controller
             ],
 
 
-            // ======================================
             // NGO VERIFICATION
-            // ======================================
-
             'ngo_verification' => [
 
                 'verified' =>
@@ -538,18 +599,12 @@ class AdminController extends Controller
             ],
 
 
-            // ======================================
             // NGO LIST
-            // ======================================
-
             'ngos' =>
                 $ngos,
 
 
-            // ======================================
             // DONATIONS
-            // ======================================
-
             'donations_by_category' =>
                 $donationsByCategory,
 
@@ -557,10 +612,7 @@ class AdminController extends Controller
                 $donationsByDonor,
 
 
-            // ======================================
             // REQUESTS
-            // ======================================
-
             'requests_by_ngo' =>
                 $requestsByNgo,
 
@@ -571,10 +623,7 @@ class AdminController extends Controller
                 $requestDetails,
 
 
-            // ======================================
             // DELIVERIES
-            // ======================================
-
             'deliveries_by_status' =>
                 $deliveriesByStatus,
 
@@ -582,26 +631,17 @@ class AdminController extends Controller
                 $recentDeliveries,
 
 
-            // ======================================
             // VOLUNTEERS
-            // ======================================
-
             'volunteer_workload' =>
                 $volunteerWorkload,
 
 
-            // ======================================
             // RECIPIENTS
-            // ======================================
-
             'recipients_by_ngo' =>
                 $recipientsByNgo,
 
 
-            // ======================================
             // DATABASE IMPLEMENTATION
-            // ======================================
-
             'database_features' => [
 
                 'view_name' =>
@@ -615,6 +655,18 @@ class AdminController extends Controller
 
                 'procedure_description' =>
                     'Returns the total donors, NGOs, volunteers, donations, requests, deliveries and recipients.',
+
+                'trigger_name' =>
+                    'prevent_verified_ngo_downgrade',
+
+                'trigger_description' =>
+                    'Prevents a verified NGO from being changed back to pending.',
+
+                'second_trigger_name' =>
+                    'prevent_delivered_status_downgrade',
+
+                'second_trigger_description' =>
+                    'Prevents a delivered delivery from being changed back to another status.',
             ],
 
         ]);
@@ -629,22 +681,15 @@ class AdminController extends Controller
 
     public function verifyNgo(string $id)
     {
-        $ngo =
-            Ngo::findOrFail($id);
-
+        $ngo = Ngo::findOrFail($id);
 
         DB::update("
             UPDATE ngos
-
             SET is_verified = 1
-
             WHERE id = ?
         ", [$id]);
 
-
-        $ngo =
-            Ngo::findOrFail($id);
-
+        $ngo = Ngo::findOrFail($id);
 
         return response()->json([
 
@@ -668,22 +713,31 @@ class AdminController extends Controller
 
     public function unverifyNgo(string $id)
     {
-        $ngo =
-            Ngo::findOrFail($id);
+        $ngo = Ngo::findOrFail($id);
+
+        try {
+
+            DB::update("
+                UPDATE ngos
+                SET is_verified = 0
+                WHERE id = ?
+            ", [$id]);
+
+        } catch (Throwable $e) {
+
+            return response()->json([
+
+                'success' =>
+                    false,
+
+                'message' =>
+                    'A verified NGO cannot be changed back to pending.',
+
+            ], 422);
+        }
 
 
-        DB::update("
-            UPDATE ngos
-
-            SET is_verified = 0
-
-            WHERE id = ?
-        ", [$id]);
-
-
-        $ngo =
-            Ngo::findOrFail($id);
-
+        $ngo = Ngo::findOrFail($id);
 
         return response()->json([
 
