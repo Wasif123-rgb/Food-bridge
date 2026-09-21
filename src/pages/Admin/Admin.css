@@ -337,10 +337,20 @@
 ========================= */
 
 .section-heading {
-  position: relative;
+  display: flex;
+  align-items: flex-start;
   width: 100%;
   margin-bottom: 20px;
-  padding-right: 190px;
+}
+
+.section-heading > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.section-heading > .dashboard-filter {
+  margin-left: auto;
+  flex: 0 0 170px;
 }
 
 .section-heading h2 {
@@ -362,36 +372,24 @@
 .section-label {
   margin-bottom: 5px;
 }
-
-
 /* =========================
    DASHBOARD FILTERS
 ========================= */
 
 .dashboard-filter {
-  position: absolute;
-  top: 0;
-  right: 0;
-
-  width: 170px;
   min-width: 170px;
-
   padding: 10px 34px 10px 12px;
-
   border: 1px solid #dfe7e1;
   border-radius: 9px;
-
   background: #ffffff;
   color: #344239;
-
   font-family: Arial, Helvetica, sans-serif;
   font-size: 11px;
   font-weight: 600;
-
   cursor: pointer;
   outline: none;
-
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .dashboard-filter:hover {
@@ -408,7 +406,6 @@
   color: #344239;
   background: #ffffff;
 }
-
 
 /* =========================
    CATEGORY
@@ -846,6 +843,192 @@ tbody tr:hover {
 }
 
 
+
+
+/* =========================
+   DATABASE IMPLEMENTATION
+========================= */
+
+.database-features-section {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.database-features-card {
+  margin-bottom: 0;
+}
+
+.database-section-heading {
+  margin-bottom: 18px;
+}
+
+.database-features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.database-feature-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #e5ece6;
+  border-radius: 13px;
+  background: #f8faf8;
+}
+
+.database-feature-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: #e3f0e5;
+  color: #315d42;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  flex-shrink: 0;
+}
+
+.database-feature-icon.procedure-icon {
+  background: #eef2ed;
+  color: #53665a;
+}
+
+.database-feature-content {
+  min-width: 0;
+}
+
+.database-feature-label {
+  display: block;
+  margin-bottom: 5px;
+  color: #66816f;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+}
+
+.database-feature-content h3 {
+  margin: 0;
+  color: #26372c;
+  font-size: 14px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.database-feature-content p {
+  margin: 7px 0 10px;
+  color: #748078;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.database-feature-status {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 20px;
+  background: #e8f4ea;
+  color: #397047;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1250px) {
+  .summary-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .status-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+
+@media (max-width: 950px) {
+  .admin-sidebar {
+    width: 210px;
+  }
+
+  .admin-main {
+    margin-left: 210px;
+    width: calc(100% - 210px);
+    padding: 28px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+@media (max-width: 700px) {
+  .admin-sidebar {
+    display: none;
+  }
+
+  .admin-main {
+    margin-left: 0;
+    width: 100%;
+    padding: 20px;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-header {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .verification-container {
+    grid-template-columns: 1fr;
+  }
+
+  .status-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-footer {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .database-features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .database-feature-card {
+    padding: 15px;
+  }
+}
+
+
+@media (max-width: 450px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-card {
+    padding: 18px;
+  }
+
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-header h1 {
+    font-size: 27px;
+  }
+}
 /* =========================
    NGO MANAGEMENT
 ========================= */
@@ -920,99 +1103,144 @@ tbody tr:hover {
 }
 
 
-/* =========================
-   RESPONSIVE
-========================= */
+/* =========================================================
+   DATABASE OUTPUT
+========================================================= */
 
-@media (max-width: 1250px) {
-  .summary-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .status-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.database-output-card {
+  display: block;
+  min-height: 100%;
 }
 
-
-@media (max-width: 950px) {
-  .admin-sidebar {
-    width: 210px;
-  }
-
-  .admin-main {
-    margin-left: 210px;
-    width: calc(100% - 210px);
-    padding: 28px;
-  }
-
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
+.database-feature-top {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
 }
 
+.database-feature-top .database-feature-icon {
+  flex-shrink: 0;
+}
+
+.database-feature-top .database-feature-content h3 {
+  margin: 0;
+}
+
+.database-feature-description {
+  color: #748078;
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 0 0 18px;
+}
+
+.database-output-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 9px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #e4ebe6;
+}
+
+.database-output-title span {
+  color: #66816f;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+}
+
+.database-output-title small {
+  color: #8a948d;
+  font-size: 9px;
+}
+
+.database-output-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e4ebe6;
+  border-radius: 9px;
+}
+
+.database-output-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.database-output-table th {
+  background: #f3f7f4;
+  padding: 9px 10px;
+  font-size: 8px;
+}
+
+.database-output-table td {
+  padding: 10px;
+  font-size: 10px;
+}
+
+.database-output-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.database-category-name {
+  color: #2d3b32;
+  font-weight: 600;
+}
+
+.database-output-table td:nth-child(2),
+.database-output-table td:nth-child(3) {
+  color: #355b43;
+  font-weight: 700;
+}
+
+.procedure-output-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.procedure-output-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 11px;
+  background: #f7f9f7;
+  border: 1px solid #e4ebe6;
+  border-radius: 8px;
+}
+
+.procedure-output-item span {
+  color: #68766e;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.procedure-output-item strong {
+  color: #25362b;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.database-output-card .database-feature-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 15px;
+}
+
+.database-output-card .database-feature-status span {
+  font-size: 10px;
+}
 
 @media (max-width: 700px) {
-  .admin-sidebar {
-    display: none;
-  }
-
-  .admin-main {
-    margin-left: 0;
-    width: 100%;
-    padding: 20px;
-  }
-
-  .summary-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .admin-header {
-    flex-direction: column;
-    gap: 15px;
-  }
-
-  .verification-container {
+  .procedure-output-grid {
     grid-template-columns: 1fr;
   }
 
-  .status-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .admin-footer {
+  .database-output-title {
+    align-items: flex-start;
     flex-direction: column;
-    gap: 5px;
-  }
-
-  /* FILTERS ON MOBILE */
-  .section-heading {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .dashboard-filter {
-    width: 100%;
-    min-width: 0;
-    margin-left: 0;
-  }
-}
-
-
-@media (max-width: 450px) {
-  .summary-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .dashboard-card {
-    padding: 18px;
-  }
-
-  .status-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-header h1 {
-    font-size: 27px;
+    gap: 4px;
   }
 }

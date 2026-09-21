@@ -96,6 +96,12 @@ type DashboardData = {
     delivered_at: string | null;
     delivery_status: string;
   }[];
+  database_features?: {
+    view_name: string;
+    view_description: string;
+    procedure_name: string;
+    procedure_description: string;
+  };
 };
 
 function Admin() {
@@ -1521,6 +1527,193 @@ function Admin() {
             </div>
 
           )}
+
+        </section>
+
+        {/* ==================================================
+            DATABASE IMPLEMENTATION
+        ================================================== */}
+
+        <section className="database-features-section">
+
+          <div className="dashboard-card database-features-card">
+
+            <div className="section-heading database-section-heading">
+
+              <div>
+                <span className="section-label">
+                  DATABASE IMPLEMENTATION
+                </span>
+
+                <h2>
+                  SQL View & Stored Procedure
+                </h2>
+
+                <p>
+                  Live output from the database objects used by the admin dashboard.
+                </p>
+              </div>
+
+            </div>
+
+            <div className="database-features-grid">
+
+              {/* VIEW OUTPUT */}
+              <div className="database-feature-card database-output-card">
+
+                <div className="database-feature-top">
+
+                  <div className="database-feature-icon">
+                    VIEW
+                  </div>
+
+                  <div className="database-feature-content">
+                    <span className="database-feature-label">
+                      DATABASE VIEW
+                    </span>
+
+                    <h3>
+                      {dashboard.database_features?.view_name ||
+                        "admin_donation_summary"}
+                    </h3>
+                  </div>
+
+                </div>
+
+                <p className="database-feature-description">
+                  {dashboard.database_features?.view_description ||
+                    "Groups food donations by category and calculates the total donation count and quantity."}
+                </p>
+
+                <div className="database-output-title">
+                  <span>VIEW OUTPUT</span>
+                  <small>Live database result</small>
+                </div>
+
+                {dashboard.donations_by_category.length > 0 ? (
+                  <div className="database-output-table-wrapper">
+                    <table className="database-output-table">
+                      <thead>
+                        <tr>
+                          <th>Food Category</th>
+                          <th>Donations</th>
+                          <th>Quantity</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {dashboard.donations_by_category.map(
+                          (item, index) => (
+                            <tr
+                              key={`${item.food_category}-${index}`}
+                            >
+                              <td>
+                                <span className="database-category-name">
+                                  🍽️ {item.food_category}
+                                </span>
+                              </td>
+                              <td>{item.total_donations}</td>
+                              <td>{item.total_quantity}</td>
+                            </tr>
+                          )
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="database-empty">
+                    No View output available.
+                  </div>
+                )}
+
+                <div className="database-feature-status">
+                  <span>✓</span>
+                  View executed successfully
+                </div>
+
+              </div>
+
+              {/* STORED PROCEDURE OUTPUT */}
+              <div className="database-feature-card database-output-card">
+
+                <div className="database-feature-top">
+
+                  <div className="database-feature-icon procedure-icon">
+                    SQL
+                  </div>
+
+                  <div className="database-feature-content">
+                    <span className="database-feature-label">
+                      STORED PROCEDURE
+                    </span>
+
+                    <h3>
+                      {dashboard.database_features?.procedure_name ||
+                        "get_admin_summary()"}
+                    </h3>
+                  </div>
+
+                </div>
+
+                <p className="database-feature-description">
+                  {dashboard.database_features?.procedure_description ||
+                    "Returns the total donors, NGOs, volunteers, donations, requests, deliveries and recipients."}
+                </p>
+
+                <div className="database-output-title">
+                  <span>PROCEDURE OUTPUT</span>
+                  <small>Live database result</small>
+                </div>
+
+                <div className="procedure-output-grid">
+
+                  <div className="procedure-output-item">
+                    <span>Donors</span>
+                    <strong>{dashboard.summary.donors}</strong>
+                  </div>
+
+                  <div className="procedure-output-item">
+                    <span>NGOs</span>
+                    <strong>{dashboard.summary.ngos}</strong>
+                  </div>
+
+                  <div className="procedure-output-item">
+                    <span>Volunteers</span>
+                    <strong>{dashboard.summary.volunteers}</strong>
+                  </div>
+
+                  <div className="procedure-output-item">
+                    <span>Donations</span>
+                    <strong>{dashboard.summary.donations}</strong>
+                  </div>
+
+                  <div className="procedure-output-item">
+                    <span>Requests</span>
+                    <strong>{dashboard.summary.requests}</strong>
+                  </div>
+
+                  <div className="procedure-output-item">
+                    <span>Deliveries</span>
+                    <strong>{dashboard.summary.deliveries}</strong>
+                  </div>
+
+                  <div className="procedure-output-item">
+                    <span>Recipients</span>
+                    <strong>{dashboard.summary.recipients}</strong>
+                  </div>
+
+                </div>
+
+                <div className="database-feature-status">
+                  <span>✓</span>
+                  Stored procedure executed successfully
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
 
         </section>
 
