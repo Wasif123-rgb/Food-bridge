@@ -70,23 +70,49 @@ type RequestDetail = {
   requested_at: string;
 };
 
+type TransactionFinalRow = {
+  id: number;
+  action_name: string;
+};
+
+type TransactionDemo = {
+  success: boolean;
+  results: {
+    id: number;
+    operation: string;
+    result: string;
+  }[];
+  final_rows: TransactionFinalRow[];
+};
+
 type DashboardData = {
   success: boolean;
+
   summary: Summary;
+
   ngo_verification: NgoVerification;
+
   donations_by_category: DonationCategory[];
+
   donations_by_donor: DonationByDonor[];
+
   requests_by_ngo: RequestByNgo[];
+
   requests_by_status: StatusData[];
+
   deliveries_by_status: StatusData[];
+
   volunteer_workload: VolunteerWorkload[];
+
   recipients_by_ngo: {
     id: number;
     ngo_name: string;
     total_recipients: number;
     total_household_size: string;
   }[];
+
   request_details: RequestDetail[];
+
   recent_deliveries: {
     id: number;
     food_name: string;
@@ -96,6 +122,7 @@ type DashboardData = {
     delivered_at: string | null;
     delivery_status: string;
   }[];
+
   database_features?: {
     view_name: string;
     view_description: string;
@@ -119,8 +146,20 @@ function Admin() {
 
   const [error, setError] = useState("");
 
-  // Temporary NGO action message
   const [ngoActionMessage, setNgoActionMessage] =
+    useState("");
+
+  // ======================================================
+  // TRANSACTION DEMO
+  // ======================================================
+
+  const [transactionDemo, setTransactionDemo] =
+    useState<TransactionDemo | null>(null);
+
+  const [transactionLoading, setTransactionLoading] =
+    useState(false);
+
+  const [transactionError, setTransactionError] =
     useState("");
 
   // ======================================================
@@ -145,16 +184,13 @@ function Admin() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("auth_token");
+        const token =
+          localStorage.getItem("auth_token");
 
         if (!token) {
           navigate("/login", { replace: true });
           return;
         }
-
-        // -----------------------------
-        // Dashboard
-        // -----------------------------
 
         const dashboardResponse = await fetch(
           "http://127.0.0.1:8000/api/admin/dashboard",
@@ -178,10 +214,6 @@ function Admin() {
 
         setDashboard(dashboardData);
 
-        // -----------------------------
-        // NGOs
-        // -----------------------------
-
         const ngoResponse = await fetch(
           "http://127.0.0.1:8000/api/ngos",
           {
@@ -194,10 +226,13 @@ function Admin() {
         );
 
         if (!ngoResponse.ok) {
-          throw new Error("Failed to load NGOs");
+          throw new Error(
+            "Failed to load NGOs"
+          );
         }
 
-        const ngoData = await ngoResponse.json();
+        const ngoData =
+          await ngoResponse.json();
 
         setNgos(ngoData.data || []);
       } catch (err) {
@@ -215,10 +250,12 @@ function Admin() {
   }, [navigate]);
 
   // ======================================================
-  // TEMPORARY NGO MESSAGE
+  // NGO MESSAGE
   // ======================================================
 
-  const showNgoMessage = (message: string) => {
+  const showNgoMessage = (
+    message: string
+  ) => {
     setNgoActionMessage(message);
 
     setTimeout(() => {
@@ -236,7 +273,6 @@ function Admin() {
   ) => {
     try {
       setNgoLoading(ngoId);
-
       setNgoActionMessage("");
 
       const token =
@@ -246,19 +282,19 @@ function Admin() {
         ? `http://127.0.0.1:8000/api/admin/ngos/${ngoId}/verify`
         : `http://127.0.0.1:8000/api/admin/ngos/${ngoId}/unverify`;
 
-      const response = await fetch(endpoint, {
-        method: "PUT",
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        endpoint,
+        {
+          method: "PUT",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      const data = await response.json();
-
-      // ==================================================
-      // DATABASE TRIGGER / BACKEND ERROR
-      // ==================================================
+      const data =
+        await response.json();
 
       if (!response.ok) {
         showNgoMessage(
@@ -268,10 +304,6 @@ function Admin() {
 
         return;
       }
-
-      // ==================================================
-      // UPDATE NGO IMMEDIATELY ON SCREEN
-      // ==================================================
 
       setNgos((currentNgos) =>
         currentNgos.map((ngo) =>
@@ -284,45 +316,41 @@ function Admin() {
         )
       );
 
-      // ==================================================
-      // UPDATE VERIFICATION COUNTS IMMEDIATELY
-      // ==================================================
+      setDashboard(
+        (currentDashboard) => {
+          if (!currentDashboard) {
+            return currentDashboard;
+          }
 
-      setDashboard((currentDashboard) => {
-        if (!currentDashboard) {
-          return currentDashboard;
+          const currentVerified =
+            currentDashboard.ngo_verification
+              .verified;
+
+          const currentPending =
+            currentDashboard.ngo_verification
+              .pending;
+
+          return {
+            ...currentDashboard,
+
+            ngo_verification: {
+              verified: verify
+                ? currentVerified + 1
+                : Math.max(
+                    0,
+                    currentVerified - 1
+                  ),
+
+              pending: verify
+                ? Math.max(
+                    0,
+                    currentPending - 1
+                  )
+                : currentPending + 1,
+            },
+          };
         }
-
-        const currentVerified =
-          currentDashboard.ngo_verification.verified;
-
-        const currentPending =
-          currentDashboard.ngo_verification.pending;
-
-        return {
-          ...currentDashboard,
-
-          ngo_verification: {
-            verified: verify
-              ? currentVerified + 1
-              : Math.max(
-                  0,
-                  currentVerified - 1
-                ),
-
-            pending: verify
-              ? Math.max(
-                  0,
-                  currentPending - 1
-                )
-              : currentPending + 1,
-          },
-        };
-      });
-
-      // ==================================================
-      // SUCCESS MESSAGE
-      // ==================================================
+      );
 
       showNgoMessage(
         verify
@@ -343,12 +371,92 @@ function Admin() {
   };
 
   // ======================================================
+  // RUN RAW SQL TRANSACTION DEMO
+  // ======================================================
+
+  const runTransactionDemo = async () => {
+    if (transactionLoading) {
+      return;
+    }
+
+    try {
+      setTransactionLoading(true);
+      setTransactionError("");
+
+      setTransactionDemo(null);
+
+      const token =
+        localStorage.getItem("auth_token");
+
+      if (!token) {
+        navigate("/login", {
+          replace: true,
+        });
+
+        return;
+      }
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/admin/transactions/demo",
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok || data.success !== true) {
+        throw new Error(
+          data.message ||
+            "Transaction demonstration failed."
+        );
+      }
+
+      const normalizedTransactionDemo: TransactionDemo = {
+        success: true,
+
+        results: Array.isArray(data.results)
+          ? data.results
+          : [],
+
+        final_rows: Array.isArray(data.final_rows)
+          ? data.final_rows
+          : [],
+      };
+
+      setTransactionDemo(
+        normalizedTransactionDemo
+      );
+    } catch (err) {
+      console.error(err);
+
+      setTransactionError(
+        err instanceof Error
+          ? err.message
+          : "Transaction demonstration failed."
+      );
+    } finally {
+      setTransactionLoading(false);
+    }
+  };
+
+  // ======================================================
   // LOGOUT
   // ======================================================
 
   const handleLogout = () => {
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("user");
+    localStorage.removeItem(
+      "auth_token"
+    );
+
+    localStorage.removeItem(
+      "user"
+    );
 
     navigate("/login", {
       replace: true,
@@ -403,17 +511,18 @@ function Admin() {
   // FILTER NGO APPLICATIONS
   // ======================================================
 
-  const filteredNgos = ngos.filter((ngo) => {
-    if (ngoFilter === "verified") {
-      return ngo.is_verified;
-    }
+  const filteredNgos =
+    ngos.filter((ngo) => {
+      if (ngoFilter === "verified") {
+        return ngo.is_verified;
+      }
 
-    if (ngoFilter === "pending") {
-      return !ngo.is_verified;
-    }
+      if (ngoFilter === "pending") {
+        return !ngo.is_verified;
+      }
 
-    return true;
-  });
+      return true;
+    });
 
   // ======================================================
   // FILTER DONATIONS BY CATEGORY
@@ -458,36 +567,42 @@ function Admin() {
   // FILTER OPTIONS
   // ======================================================
 
-  const donationCategories = Array.from(
-    new Set(
-      dashboard.donations_by_category.map(
-        (item) => item.food_category
+  const donationCategories =
+    Array.from(
+      new Set(
+        dashboard.donations_by_category.map(
+          (item) =>
+            item.food_category
+        )
       )
-    )
-  );
+    );
 
-  const requestStatuses = Array.from(
-    new Set(
-      dashboard.request_details.map(
-        (item) => item.request_status
+  const requestStatuses =
+    Array.from(
+      new Set(
+        dashboard.request_details.map(
+          (item) =>
+            item.request_status
+        )
       )
-    )
-  );
+    );
 
-  const deliveryStatuses = Array.from(
-    new Set(
-      dashboard.deliveries_by_status.map(
-        (item) => item.delivery_status
+  const deliveryStatuses =
+    Array.from(
+      new Set(
+        dashboard.deliveries_by_status.map(
+          (item) =>
+            item.delivery_status
+        )
       )
-    )
-  );
+    );
+
+  // ======================================================
+  // PAGE
+  // ======================================================
 
   return (
     <div className="admin-page">
-
-      {/* ==================================================
-          SIDEBAR
-      ================================================== */}
 
       <aside className="admin-sidebar">
 
@@ -498,8 +613,13 @@ function Admin() {
           </div>
 
           <div>
-            <h2>FoodBridge</h2>
-            <span>Administration</span>
+            <h2>
+              FoodBridge
+            </h2>
+
+            <span>
+              Administration
+            </span>
           </div>
 
         </div>
@@ -541,8 +661,6 @@ function Admin() {
 
         </nav>
 
-        {/* SIDEBAR BOTTOM */}
-
         <div className="admin-sidebar-bottom">
 
           <div className="admin-profile">
@@ -577,13 +695,7 @@ function Admin() {
 
       </aside>
 
-      {/* ==================================================
-          MAIN
-      ================================================== */}
-
       <main className="admin-main">
-
-        {/* HEADER */}
 
         <header
           className="admin-header"
@@ -601,8 +713,8 @@ function Admin() {
             </h1>
 
             <p className="header-description">
-              Monitor FoodBridge activity, donations, requests
-              and community impact from one place.
+              Monitor FoodBridge activity, donations,
+              requests and community impact from one place.
             </p>
 
           </div>
@@ -617,10 +729,6 @@ function Admin() {
 
         </header>
 
-        {/* ==================================================
-            SUMMARY CARDS
-        ================================================== */}
-
         <section className="summary-grid">
 
           <div className="summary-card">
@@ -630,7 +738,10 @@ function Admin() {
             </div>
 
             <div>
-              <span>Total Donors</span>
+              <span>
+                Total Donors
+              </span>
+
               <strong>
                 {summary.donors}
               </strong>
@@ -645,7 +756,10 @@ function Admin() {
             </div>
 
             <div>
-              <span>Partner NGOs</span>
+              <span>
+                Partner NGOs
+              </span>
+
               <strong>
                 {summary.ngos}
               </strong>
@@ -660,7 +774,10 @@ function Admin() {
             </div>
 
             <div>
-              <span>Food Donations</span>
+              <span>
+                Food Donations
+              </span>
+
               <strong>
                 {summary.donations}
               </strong>
@@ -675,7 +792,10 @@ function Admin() {
             </div>
 
             <div>
-              <span>Food Requests</span>
+              <span>
+                Food Requests
+              </span>
+
               <strong>
                 {summary.requests}
               </strong>
@@ -690,7 +810,10 @@ function Admin() {
             </div>
 
             <div>
-              <span>Deliveries</span>
+              <span>
+                Deliveries
+              </span>
+
               <strong>
                 {summary.deliveries}
               </strong>
@@ -705,7 +828,10 @@ function Admin() {
             </div>
 
             <div>
-              <span>Volunteers</span>
+              <span>
+                Volunteers
+              </span>
+
               <strong>
                 {summary.volunteers}
               </strong>
@@ -715,13 +841,7 @@ function Admin() {
 
         </section>
 
-        {/* ==================================================
-            DONATIONS + NGO VERIFICATION SUMMARY
-        ================================================== */}
-
         <section className="dashboard-grid">
-
-          {/* DONATIONS */}
 
           <div
             className="dashboard-card"
@@ -746,11 +866,11 @@ function Admin() {
 
               </div>
 
-              {/* DONATION CATEGORY FILTER */}
-
               <select
                 className="dashboard-filter"
-                value={donationCategoryFilter}
+                value={
+                  donationCategoryFilter
+                }
                 onChange={(e) =>
                   setDonationCategoryFilter(
                     e.target.value
@@ -777,13 +897,16 @@ function Admin() {
 
             </div>
 
-            {dashboard.donations_by_category.length === 0 ? (
+            {dashboard
+              .donations_by_category
+              .length === 0 ? (
 
               <p className="empty-message">
                 No donation data available.
               </p>
 
-            ) : filteredDonationsByCategory.length === 0 ? (
+            ) : filteredDonationsByCategory.length ===
+              0 ? (
 
               <p className="empty-message">
                 No donations match this category.
@@ -839,8 +962,6 @@ function Admin() {
 
           </div>
 
-          {/* NGO VERIFICATION SUMMARY */}
-
           <div
             className="dashboard-card"
             id="ngos"
@@ -870,12 +991,18 @@ function Admin() {
 
               <div className="verification-box verified">
 
-                <span>✓</span>
+                <span>
+                  ✓
+                </span>
 
                 <div>
 
                   <strong>
-                    {dashboard.ngo_verification.verified}
+                    {
+                      dashboard
+                        .ngo_verification
+                        .verified
+                    }
                   </strong>
 
                   <small>
@@ -888,12 +1015,18 @@ function Admin() {
 
               <div className="verification-box pending">
 
-                <span>!</span>
+                <span>
+                  !
+                </span>
 
                 <div>
 
                   <strong>
-                    {dashboard.ngo_verification.pending}
+                    {
+                      dashboard
+                        .ngo_verification
+                        .pending
+                    }
                   </strong>
 
                   <small>
@@ -909,10 +1042,6 @@ function Admin() {
           </div>
 
         </section>
-
-        {/* ==================================================
-            NGO MANAGEMENT
-        ================================================== */}
 
         <section className="dashboard-card ngo-management-card">
 
@@ -935,13 +1064,13 @@ function Admin() {
 
             </div>
 
-            {/* NGO FILTER */}
-
             <select
               className="dashboard-filter"
               value={ngoFilter}
               onChange={(e) =>
-                setNgoFilter(e.target.value)
+                setNgoFilter(
+                  e.target.value
+                )
               }
             >
 
@@ -961,21 +1090,21 @@ function Admin() {
 
           </div>
 
-          {/* ==================================================
-              TEMPORARY NGO ACTION MESSAGE
-          ================================================== */}
-
           {ngoActionMessage && (
+
             <div className="ngo-action-message">
               {ngoActionMessage}
             </div>
+
           )}
 
           {ngos.length === 0 ? (
 
             <div className="empty-state">
 
-              <div>🤝</div>
+              <div>
+                🤝
+              </div>
 
               <h3>
                 No NGOs registered
@@ -1005,140 +1134,130 @@ function Admin() {
                   <thead>
 
                     <tr>
-
-                      <th>
-                        NGO
-                      </th>
-
-                      <th>
-                        Registration
-                      </th>
-
-                      <th>
-                        Email
-                      </th>
-
-                      <th>
-                        Status
-                      </th>
-
-                      <th>
-                        Action
-                      </th>
-
+                      <th>NGO</th>
+                      <th>Registration</th>
+                      <th>Email</th>
+                      <th>Status</th>
+                      <th>Action</th>
                     </tr>
 
                   </thead>
 
                   <tbody>
 
-                    {filteredNgos.map((ngo) => (
+                    {filteredNgos.map(
+                      (ngo) => (
 
-                      <tr key={ngo.id}>
+                        <tr key={ngo.id}>
 
-                        <td>
+                          <td>
 
-                          <div className="ngo-name-cell">
+                            <div className="ngo-name-cell">
 
-                            <div className="ngo-table-avatar">
-                              {ngo.ngo_name
-                                .charAt(0)
-                                .toUpperCase()}
+                              <div className="ngo-table-avatar">
+                                {ngo.ngo_name
+                                  .charAt(0)
+                                  .toUpperCase()}
+                              </div>
+
+                              <div>
+
+                                <strong>
+                                  {ngo.ngo_name}
+                                </strong>
+
+                                <small>
+                                  {ngo.phone}
+                                </small>
+
+                              </div>
+
                             </div>
 
-                            <div>
+                          </td>
 
-                              <strong>
-                                {ngo.ngo_name}
-                              </strong>
+                          <td>
+                            {ngo.registration_no}
+                          </td>
 
-                              <small>
-                                {ngo.phone}
-                              </small>
+                          <td>
+                            {ngo.email}
+                          </td>
 
-                            </div>
+                          <td>
 
-                          </div>
+                            {ngo.is_verified ? (
 
-                        </td>
+                              <span className="ngo-status verified-status">
+                                ✓ Verified
+                              </span>
 
-                        <td>
-                          {ngo.registration_no}
-                        </td>
+                            ) : (
 
-                        <td>
-                          {ngo.email}
-                        </td>
+                              <span className="ngo-status pending-status">
+                                ! Pending
+                              </span>
 
-                        <td>
+                            )}
 
-                          {ngo.is_verified ? (
+                          </td>
 
-                            <span className="ngo-status verified-status">
-                              ✓ Verified
-                            </span>
+                          <td>
 
-                          ) : (
+                            {ngo.is_verified ? (
 
-                            <span className="ngo-status pending-status">
-                              ! Pending
-                            </span>
+                              <button
+                                className="ngo-action-button unverify-button"
+                                disabled={
+                                  ngoLoading ===
+                                  ngo.id
+                                }
+                                onClick={() =>
+                                  handleNgoVerification(
+                                    ngo.id,
+                                    false
+                                  )
+                                }
+                              >
 
-                          )}
+                                {ngoLoading ===
+                                ngo.id
+                                  ? "Updating..."
+                                  : "Set Pending"}
 
-                        </td>
+                              </button>
 
-                        <td>
+                            ) : (
 
-                          {ngo.is_verified ? (
+                              <button
+                                className="ngo-action-button verify-button"
+                                disabled={
+                                  ngoLoading ===
+                                  ngo.id
+                                }
+                                onClick={() =>
+                                  handleNgoVerification(
+                                    ngo.id,
+                                    true
+                                  )
+                                }
+                              >
 
-                            <button
-                              className="ngo-action-button unverify-button"
-                              disabled={
-                                ngoLoading === ngo.id
-                              }
-                              onClick={() =>
-                                handleNgoVerification(
-                                  ngo.id,
-                                  false
-                                )
-                              }
-                            >
+                                {ngoLoading ===
+                                ngo.id
+                                  ? "Verifying..."
+                                  : "Verify NGO"}
 
-                              {ngoLoading === ngo.id
-                                ? "Updating..."
-                                : "Set Pending"}
+                              </button>
 
-                            </button>
+                            )}
 
-                          ) : (
+                          </td>
 
-                            <button
-                              className="ngo-action-button verify-button"
-                              disabled={
-                                ngoLoading === ngo.id
-                              }
-                              onClick={() =>
-                                handleNgoVerification(
-                                  ngo.id,
-                                  true
-                                )
-                              }
-                            >
+                        </tr>
 
-                              {ngoLoading === ngo.id
-                                ? "Verifying..."
-                                : "Verify NGO"}
-
-                            </button>
-
-                          )}
-
-                        </td>
-
-                      </tr>
-
-                    ))}
+                      )
+                    )}
 
                   </tbody>
 
@@ -1151,10 +1270,6 @@ function Admin() {
           )}
 
         </section>
-
-        {/* ==================================================
-            DONATIONS BY DONOR
-        ================================================== */}
 
         <section className="dashboard-card">
 
@@ -1185,6 +1300,7 @@ function Admin() {
               <thead>
 
                 <tr>
+
                   <th>
                     Donor
                   </th>
@@ -1196,37 +1312,40 @@ function Admin() {
                   <th>
                     Total Quantity
                   </th>
+
                 </tr>
 
               </thead>
 
               <tbody>
 
-                {dashboard.donations_by_donor.map(
-                  (donor) => (
+                {dashboard
+                  .donations_by_donor
+                  .map(
+                    (donor) => (
 
-                    <tr key={donor.id}>
+                      <tr key={donor.id}>
 
-                      <td className="strong-cell">
-                        {donor.donor_name}
-                      </td>
+                        <td className="strong-cell">
+                          {donor.donor_name}
+                        </td>
 
-                      <td>
+                        <td>
 
-                        <span className="number-badge">
-                          {donor.total_donations}
-                        </span>
+                          <span className="number-badge">
+                            {donor.total_donations}
+                          </span>
 
-                      </td>
+                        </td>
 
-                      <td>
-                        {donor.total_quantity}
-                      </td>
+                        <td>
+                          {donor.total_quantity}
+                        </td>
 
-                    </tr>
+                      </tr>
 
-                  )
-                )}
+                    )
+                  )}
 
               </tbody>
 
@@ -1236,13 +1355,7 @@ function Admin() {
 
         </section>
 
-        {/* ==================================================
-            REQUESTS + VOLUNTEERS
-        ================================================== */}
-
         <section className="dashboard-grid">
-
-          {/* REQUESTS */}
 
           <div
             className="dashboard-card"
@@ -1269,7 +1382,8 @@ function Admin() {
 
             </div>
 
-            {dashboard.requests_by_ngo.length === 0 ? (
+            {dashboard.requests_by_ngo.length ===
+            0 ? (
 
               <p className="empty-message">
                 No NGO requests available.
@@ -1314,8 +1428,6 @@ function Admin() {
 
           </div>
 
-          {/* VOLUNTEERS */}
-
           <div
             className="dashboard-card"
             id="volunteers"
@@ -1341,7 +1453,8 @@ function Admin() {
 
             </div>
 
-            {dashboard.volunteer_workload.length === 0 ? (
+            {dashboard.volunteer_workload.length ===
+            0 ? (
 
               <p className="empty-message">
                 No volunteer activity available.
@@ -1376,7 +1489,10 @@ function Admin() {
                           </strong>
 
                           <small>
-                            {volunteer.availability_status}
+                            {
+                              volunteer
+                                .availability_status
+                            }
                           </small>
 
                         </div>
@@ -1384,7 +1500,9 @@ function Admin() {
                       </div>
 
                       <span className="delivery-count">
-                        {volunteer.total_deliveries} deliveries
+                        {
+                          volunteer.total_deliveries
+                        } deliveries
                       </span>
 
                     </div>
@@ -1399,10 +1517,6 @@ function Admin() {
           </div>
 
         </section>
-
-        {/* ==================================================
-            DELIVERY STATUS
-        ================================================== */}
 
         <section
           className="dashboard-card"
@@ -1426,8 +1540,6 @@ function Admin() {
               </p>
 
             </div>
-
-            {/* DELIVERY FILTER */}
 
             <select
               className="dashboard-filter"
@@ -1460,11 +1572,15 @@ function Admin() {
 
           </div>
 
-          {dashboard.deliveries_by_status.length === 0 ? (
+          {dashboard
+            .deliveries_by_status
+            .length === 0 ? (
 
             <div className="empty-state">
 
-              <div>🚚</div>
+              <div>
+                🚚
+              </div>
 
               <h3>
                 No deliveries yet
@@ -1477,7 +1593,8 @@ function Admin() {
 
             </div>
 
-          ) : filteredDeliveryStatuses.length === 0 ? (
+          ) : filteredDeliveryStatuses.length ===
+            0 ? (
 
             <p className="empty-message">
               No deliveries match this status.
@@ -1522,10 +1639,6 @@ function Admin() {
 
         </section>
 
-        {/* ==================================================
-            RECENT REQUESTS
-        ================================================== */}
-
         <section className="dashboard-card">
 
           <div className="section-heading">
@@ -1545,8 +1658,6 @@ function Admin() {
               </p>
 
             </div>
-
-            {/* REQUEST STATUS FILTER */}
 
             <select
               className="dashboard-filter"
@@ -1579,11 +1690,14 @@ function Admin() {
 
           </div>
 
-          {dashboard.request_details.length === 0 ? (
+          {dashboard.request_details.length ===
+          0 ? (
 
             <div className="empty-state">
 
-              <div>📋</div>
+              <div>
+                📋
+              </div>
 
               <h3>
                 No requests yet
@@ -1595,7 +1709,8 @@ function Admin() {
 
             </div>
 
-          ) : filteredRequestDetails.length === 0 ? (
+          ) : filteredRequestDetails.length ===
+            0 ? (
 
             <p className="empty-message">
               No requests match this status.
@@ -1661,7 +1776,10 @@ function Admin() {
                         <td>
 
                           <span className="badge">
-                            {request.request_status}
+                            {
+                              request
+                                .request_status
+                            }
                           </span>
 
                         </td>
@@ -1680,10 +1798,6 @@ function Admin() {
           )}
 
         </section>
-
-        {/* ==================================================
-            DATABASE IMPLEMENTATION
-        ================================================== */}
 
         <section className="database-features-section">
 
@@ -1712,8 +1826,6 @@ function Admin() {
 
             <div className="database-features-grid">
 
-              {/* VIEW OUTPUT */}
-
               <div className="database-feature-card database-output-card">
 
                 <div className="database-feature-top">
@@ -1729,8 +1841,12 @@ function Admin() {
                     </span>
 
                     <h3>
-                      {dashboard.database_features?.view_name ||
-                        "admin_donation_summary"}
+                      {
+                        dashboard
+                          .database_features
+                          ?.view_name ||
+                        "admin_donation_summary"
+                      }
                     </h3>
 
                   </div>
@@ -1739,8 +1855,12 @@ function Admin() {
 
                 <p className="database-feature-description">
 
-                  {dashboard.database_features?.view_description ||
-                    "Groups food donations by category and calculates the total donation count and quantity."}
+                  {
+                    dashboard
+                      .database_features
+                      ?.view_description ||
+                    "Groups food donations by category and calculates the total donation count and quantity."
+                  }
 
                 </p>
 
@@ -1756,7 +1876,9 @@ function Admin() {
 
                 </div>
 
-                {dashboard.donations_by_category.length > 0 ? (
+                {dashboard
+                  .donations_by_category
+                  .length > 0 ? (
 
                   <div className="database-output-table-wrapper">
 
@@ -1784,33 +1906,45 @@ function Admin() {
 
                       <tbody>
 
-                        {dashboard.donations_by_category.map(
-                          (item, index) => (
+                        {dashboard
+                          .donations_by_category
+                          .map(
+                            (
+                              item,
+                              index
+                            ) => (
 
-                            <tr
-                              key={`${item.food_category}-${index}`}
-                            >
+                              <tr
+                                key={`${item.food_category}-${index}`}
+                              >
 
-                              <td>
+                                <td>
 
-                                <span className="database-category-name">
-                                  🍽️ {item.food_category}
-                                </span>
+                                  <span className="database-category-name">
+                                    🍽️{" "}
+                                    {
+                                      item.food_category
+                                    }
+                                  </span>
 
-                              </td>
+                                </td>
 
-                              <td>
-                                {item.total_donations}
-                              </td>
+                                <td>
+                                  {
+                                    item.total_donations
+                                  }
+                                </td>
 
-                              <td>
-                                {item.total_quantity}
-                              </td>
+                                <td>
+                                  {
+                                    item.total_quantity
+                                  }
+                                </td>
 
-                            </tr>
+                              </tr>
 
-                          )
-                        )}
+                            )
+                          )}
 
                       </tbody>
 
@@ -1838,8 +1972,6 @@ function Admin() {
 
               </div>
 
-              {/* STORED PROCEDURE OUTPUT */}
-
               <div className="database-feature-card database-output-card">
 
                 <div className="database-feature-top">
@@ -1855,8 +1987,12 @@ function Admin() {
                     </span>
 
                     <h3>
-                      {dashboard.database_features?.procedure_name ||
-                        "get_admin_summary()"}
+                      {
+                        dashboard
+                          .database_features
+                          ?.procedure_name ||
+                        "get_admin_summary()"
+                      }
                     </h3>
 
                   </div>
@@ -1865,8 +2001,12 @@ function Admin() {
 
                 <p className="database-feature-description">
 
-                  {dashboard.database_features?.procedure_description ||
-                    "Returns the total donors, NGOs, volunteers, donations, requests, deliveries and recipients."}
+                  {
+                    dashboard
+                      .database_features
+                      ?.procedure_description ||
+                    "Returns the total donors, NGOs, volunteers, donations, requests, deliveries and recipients."
+                  }
 
                 </p>
 
@@ -1885,52 +2025,87 @@ function Admin() {
                 <div className="procedure-output-grid">
 
                   <div className="procedure-output-item">
-                    <span>Donors</span>
+
+                    <span>
+                      Donors
+                    </span>
+
                     <strong>
                       {dashboard.summary.donors}
                     </strong>
+
                   </div>
 
                   <div className="procedure-output-item">
-                    <span>NGOs</span>
+
+                    <span>
+                      NGOs
+                    </span>
+
                     <strong>
                       {dashboard.summary.ngos}
                     </strong>
+
                   </div>
 
                   <div className="procedure-output-item">
-                    <span>Volunteers</span>
+
+                    <span>
+                      Volunteers
+                    </span>
+
                     <strong>
                       {dashboard.summary.volunteers}
                     </strong>
+
                   </div>
 
                   <div className="procedure-output-item">
-                    <span>Donations</span>
+
+                    <span>
+                      Donations
+                    </span>
+
                     <strong>
                       {dashboard.summary.donations}
                     </strong>
+
                   </div>
 
                   <div className="procedure-output-item">
-                    <span>Requests</span>
+
+                    <span>
+                      Requests
+                    </span>
+
                     <strong>
                       {dashboard.summary.requests}
                     </strong>
+
                   </div>
 
                   <div className="procedure-output-item">
-                    <span>Deliveries</span>
+
+                    <span>
+                      Deliveries
+                    </span>
+
                     <strong>
                       {dashboard.summary.deliveries}
                     </strong>
+
                   </div>
 
                   <div className="procedure-output-item">
-                    <span>Recipients</span>
+
+                    <span>
+                      Recipients
+                    </span>
+
                     <strong>
                       {dashboard.summary.recipients}
                     </strong>
+
                   </div>
 
                 </div>
@@ -1953,9 +2128,192 @@ function Admin() {
 
         </section>
 
-        {/* ==================================================
-            FOOTER
-        ================================================== */}
+        <section className="transaction-section">
+
+          <div className="dashboard-card transaction-card">
+
+            <div className="section-heading">
+
+              <div>
+
+                <span className="section-label">
+                  DATABASE TRANSACTIONS
+                </span>
+
+                <h2>
+                  Transaction & Rollback Demonstration
+                </h2>
+
+                <p>
+                  Demonstrates raw SQL transaction control using
+                  SAVEPOINT, partial rollback, COMMIT and full
+                  ROLLBACK operations.
+                </p>
+
+              </div>
+
+              <button
+                className="transaction-run-button"
+                onClick={runTransactionDemo}
+                disabled={transactionLoading}
+              >
+
+                {transactionLoading
+                  ? "Running..."
+                  : "▶ Run Transaction Demo"}
+
+              </button>
+
+            </div>
+
+            {transactionError && (
+
+              <div className="transaction-error">
+                {transactionError}
+              </div>
+
+            )}
+
+            {transactionDemo && (
+
+              <div className="transaction-result">
+
+                <div className="transaction-result-header">
+
+                  <div>
+
+                    <span className="section-label">
+                      EXECUTION RESULT
+                    </span>
+
+                    <h3>
+                      Raw SQL Transaction Result
+                    </h3>
+
+                  </div>
+
+                  {transactionDemo.success && (
+
+                    <span className="transaction-success-badge">
+                      ✓ Success
+                    </span>
+
+                  )}
+
+                </div>
+
+                {/* ==================================================
+                    ONLY FINAL DATABASE RESULT IS SHOWN
+                    The 13-row SQL execution log has been removed.
+                   ================================================== */}
+
+                <div className="transaction-final-result">
+
+                  <span>
+                    Final committed rows
+                  </span>
+
+                  <strong>
+                    {
+                      transactionDemo
+                        .final_rows
+                        .length
+                    }
+                  </strong>
+
+                </div>
+
+                {transactionDemo
+                  .final_rows
+                  .length > 0 ? (
+
+                  <div className="transaction-final-table-wrapper">
+
+                    <table className="transaction-final-table">
+
+                      <thead>
+
+                        <tr>
+
+                          <th>
+                            ID
+                          </th>
+
+                          <th>
+                            Committed Data
+                          </th>
+
+                        </tr>
+
+                      </thead>
+
+                      <tbody>
+
+                        {transactionDemo
+                          .final_rows
+                          .map(
+                            (row) => (
+
+                              <tr
+                                key={row.id}
+                              >
+
+                                <td>
+                                  {row.id}
+                                </td>
+
+                                <td>
+                                  {row.action_name}
+                                </td>
+
+                              </tr>
+
+                            )
+                          )}
+
+                      </tbody>
+
+                    </table>
+
+                  </div>
+
+                ) : (
+
+                  <div className="transaction-empty">
+
+                    <p>
+                      No committed rows returned.
+                    </p>
+
+                  </div>
+
+                )}
+
+              </div>
+
+            )}
+
+            {!transactionDemo &&
+              !transactionLoading && (
+
+                <div className="transaction-empty">
+
+                  <div className="transaction-empty-icon">
+                    SQL
+                  </div>
+
+                  <p>
+                    Run the demonstration to view the live
+                    transaction execution results.
+                  </p>
+
+                </div>
+
+              )}
+
+          </div>
+
+        </section>
 
         <footer className="admin-footer">
 
