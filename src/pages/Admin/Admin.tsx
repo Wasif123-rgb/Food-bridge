@@ -107,22 +107,34 @@ type DashboardData = {
 function Admin() {
   const navigate = useNavigate();
 
-  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const [dashboard, setDashboard] =
+    useState<DashboardData | null>(null);
+
   const [ngos, setNgos] = useState<Ngo[]>([]);
+
   const [loading, setLoading] = useState(true);
-  const [ngoLoading, setNgoLoading] = useState<number | null>(null);
+
+  const [ngoLoading, setNgoLoading] =
+    useState<number | null>(null);
+
   const [error, setError] = useState("");
-  const [ngoError, setNgoError] = useState("");
+
+  // Temporary NGO action message
+  const [ngoActionMessage, setNgoActionMessage] =
+    useState("");
 
   // ======================================================
   // DASHBOARD FILTERS
   // ======================================================
 
   const [ngoFilter, setNgoFilter] = useState("all");
+
   const [donationCategoryFilter, setDonationCategoryFilter] =
     useState("all");
+
   const [requestStatusFilter, setRequestStatusFilter] =
     useState("all");
+
   const [deliveryStatusFilter, setDeliveryStatusFilter] =
     useState("all");
 
@@ -156,7 +168,9 @@ function Admin() {
         );
 
         if (!dashboardResponse.ok) {
-          throw new Error("Failed to load admin dashboard");
+          throw new Error(
+            "Failed to load admin dashboard"
+          );
         }
 
         const dashboardData: DashboardData =
@@ -188,7 +202,10 @@ function Admin() {
         setNgos(ngoData.data || []);
       } catch (err) {
         console.error(err);
-        setError("Unable to load admin dashboard.");
+
+        setError(
+          "Unable to load admin dashboard."
+        );
       } finally {
         setLoading(false);
       }
@@ -196,6 +213,18 @@ function Admin() {
 
     fetchData();
   }, [navigate]);
+
+  // ======================================================
+  // TEMPORARY NGO MESSAGE
+  // ======================================================
+
+  const showNgoMessage = (message: string) => {
+    setNgoActionMessage(message);
+
+    setTimeout(() => {
+      setNgoActionMessage("");
+    }, 3000);
+  };
 
   // ======================================================
   // VERIFY / UNVERIFY NGO
@@ -207,9 +236,11 @@ function Admin() {
   ) => {
     try {
       setNgoLoading(ngoId);
-      setNgoError("");
 
-      const token = localStorage.getItem("auth_token");
+      setNgoActionMessage("");
+
+      const token =
+        localStorage.getItem("auth_token");
 
       const endpoint = verify
         ? `http://127.0.0.1:8000/api/admin/ngos/${ngoId}/verify`
@@ -225,13 +256,23 @@ function Admin() {
 
       const data = await response.json();
 
+      // ==================================================
+      // DATABASE TRIGGER / BACKEND ERROR
+      // ==================================================
+
       if (!response.ok) {
-        throw new Error(
-          data.message || "Unable to update NGO verification."
+        showNgoMessage(
+          data.message ||
+            "Unable to update NGO verification."
         );
+
+        return;
       }
 
-      // Update NGO immediately on screen
+      // ==================================================
+      // UPDATE NGO IMMEDIATELY ON SCREEN
+      // ==================================================
+
       setNgos((currentNgos) =>
         currentNgos.map((ngo) =>
           ngo.id === ngoId
@@ -243,9 +284,14 @@ function Admin() {
         )
       );
 
-      // Update verification counts immediately
+      // ==================================================
+      // UPDATE VERIFICATION COUNTS IMMEDIATELY
+      // ==================================================
+
       setDashboard((currentDashboard) => {
-        if (!currentDashboard) return currentDashboard;
+        if (!currentDashboard) {
+          return currentDashboard;
+        }
 
         const currentVerified =
           currentDashboard.ngo_verification.verified;
@@ -255,21 +301,38 @@ function Admin() {
 
         return {
           ...currentDashboard,
+
           ngo_verification: {
             verified: verify
               ? currentVerified + 1
-              : Math.max(0, currentVerified - 1),
+              : Math.max(
+                  0,
+                  currentVerified - 1
+                ),
 
             pending: verify
-              ? Math.max(0, currentPending - 1)
+              ? Math.max(
+                  0,
+                  currentPending - 1
+                )
               : currentPending + 1,
           },
         };
       });
+
+      // ==================================================
+      // SUCCESS MESSAGE
+      // ==================================================
+
+      showNgoMessage(
+        verify
+          ? "NGO verified successfully."
+          : "NGO verification removed."
+      );
     } catch (err) {
       console.error(err);
 
-      setNgoError(
+      showNgoMessage(
         err instanceof Error
           ? err.message
           : "Unable to update NGO verification."
@@ -287,7 +350,9 @@ function Admin() {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("user");
 
-    navigate("/login", { replace: true });
+    navigate("/login", {
+      replace: true,
+    });
   };
 
   // ======================================================
@@ -298,7 +363,10 @@ function Admin() {
     return (
       <div className="admin-loading">
         <div className="loading-spinner"></div>
-        <p>Loading Admin Dashboard...</p>
+
+        <p>
+          Loading Admin Dashboard...
+        </p>
       </div>
     );
   }
@@ -310,11 +378,19 @@ function Admin() {
   if (error || !dashboard) {
     return (
       <div className="admin-error">
-        <h2>Something went wrong</h2>
+        <h2>
+          Something went wrong
+        </h2>
 
-        <p>{error}</p>
+        <p>
+          {error}
+        </p>
 
-        <button onClick={() => window.location.reload()}>
+        <button
+          onClick={() =>
+            window.location.reload()
+          }
+        >
           Try Again
         </button>
       </div>
@@ -328,8 +404,13 @@ function Admin() {
   // ======================================================
 
   const filteredNgos = ngos.filter((ngo) => {
-    if (ngoFilter === "verified") return ngo.is_verified;
-    if (ngoFilter === "pending") return !ngo.is_verified;
+    if (ngoFilter === "verified") {
+      return ngo.is_verified;
+    }
+
+    if (ngoFilter === "pending") {
+      return !ngo.is_verified;
+    }
 
     return true;
   });
@@ -343,7 +424,8 @@ function Admin() {
       ? dashboard.donations_by_category
       : dashboard.donations_by_category.filter(
           (item) =>
-            item.food_category === donationCategoryFilter
+            item.food_category ===
+            donationCategoryFilter
         );
 
   // ======================================================
@@ -355,7 +437,8 @@ function Admin() {
       ? dashboard.request_details
       : dashboard.request_details.filter(
           (request) =>
-            request.request_status === requestStatusFilter
+            request.request_status ===
+            requestStatusFilter
         );
 
   // ======================================================
@@ -367,7 +450,8 @@ function Admin() {
       ? dashboard.deliveries_by_status
       : dashboard.deliveries_by_status.filter(
           (item) =>
-            item.delivery_status === deliveryStatusFilter
+            item.delivery_status ===
+            deliveryStatusFilter
         );
 
   // ======================================================
@@ -422,7 +506,10 @@ function Admin() {
 
         <nav className="admin-nav">
 
-          <a href="#dashboard" className="active">
+          <a
+            href="#dashboard"
+            className="active"
+          >
             <span>▦</span>
             Dashboard
           </a>
@@ -544,7 +631,9 @@ function Admin() {
 
             <div>
               <span>Total Donors</span>
-              <strong>{summary.donors}</strong>
+              <strong>
+                {summary.donors}
+              </strong>
             </div>
 
           </div>
@@ -557,7 +646,9 @@ function Admin() {
 
             <div>
               <span>Partner NGOs</span>
-              <strong>{summary.ngos}</strong>
+              <strong>
+                {summary.ngos}
+              </strong>
             </div>
 
           </div>
@@ -570,7 +661,9 @@ function Admin() {
 
             <div>
               <span>Food Donations</span>
-              <strong>{summary.donations}</strong>
+              <strong>
+                {summary.donations}
+              </strong>
             </div>
 
           </div>
@@ -583,7 +676,9 @@ function Admin() {
 
             <div>
               <span>Food Requests</span>
-              <strong>{summary.requests}</strong>
+              <strong>
+                {summary.requests}
+              </strong>
             </div>
 
           </div>
@@ -596,7 +691,9 @@ function Admin() {
 
             <div>
               <span>Deliveries</span>
-              <strong>{summary.deliveries}</strong>
+              <strong>
+                {summary.deliveries}
+              </strong>
             </div>
 
           </div>
@@ -609,7 +706,9 @@ function Admin() {
 
             <div>
               <span>Volunteers</span>
-              <strong>{summary.volunteers}</strong>
+              <strong>
+                {summary.volunteers}
+              </strong>
             </div>
 
           </div>
@@ -653,7 +752,9 @@ function Admin() {
                 className="dashboard-filter"
                 value={donationCategoryFilter}
                 onChange={(e) =>
-                  setDonationCategoryFilter(e.target.value)
+                  setDonationCategoryFilter(
+                    e.target.value
+                  )
                 }
               >
 
@@ -661,14 +762,16 @@ function Admin() {
                   All Categories
                 </option>
 
-                {donationCategories.map((category) => (
-                  <option
-                    key={category}
-                    value={category}
-                  >
-                    {category}
-                  </option>
-                ))}
+                {donationCategories.map(
+                  (category) => (
+                    <option
+                      key={category}
+                      value={category}
+                    >
+                      {category}
+                    </option>
+                  )
+                )}
 
               </select>
 
@@ -858,12 +961,14 @@ function Admin() {
 
           </div>
 
-          {ngoError && (
+          {/* ==================================================
+              TEMPORARY NGO ACTION MESSAGE
+          ================================================== */}
 
-            <div className="ngo-error">
-              {ngoError}
+          {ngoActionMessage && (
+            <div className="ngo-action-message">
+              {ngoActionMessage}
             </div>
-
           )}
 
           {ngos.length === 0 ? (
@@ -901,11 +1006,25 @@ function Admin() {
 
                     <tr>
 
-                      <th>NGO</th>
-                      <th>Registration</th>
-                      <th>Email</th>
-                      <th>Status</th>
-                      <th>Action</th>
+                      <th>
+                        NGO
+                      </th>
+
+                      <th>
+                        Registration
+                      </th>
+
+                      <th>
+                        Email
+                      </th>
+
+                      <th>
+                        Status
+                      </th>
+
+                      <th>
+                        Action
+                      </th>
 
                     </tr>
 
@@ -1066,9 +1185,17 @@ function Admin() {
               <thead>
 
                 <tr>
-                  <th>Donor</th>
-                  <th>Total Donations</th>
-                  <th>Total Quantity</th>
+                  <th>
+                    Donor
+                  </th>
+
+                  <th>
+                    Total Donations
+                  </th>
+
+                  <th>
+                    Total Quantity
+                  </th>
                 </tr>
 
               </thead>
@@ -1306,7 +1433,9 @@ function Admin() {
               className="dashboard-filter"
               value={deliveryStatusFilter}
               onChange={(e) =>
-                setDeliveryStatusFilter(e.target.value)
+                setDeliveryStatusFilter(
+                  e.target.value
+                )
               }
             >
 
@@ -1314,16 +1443,18 @@ function Admin() {
                 All Delivery Statuses
               </option>
 
-              {deliveryStatuses.map((status) => (
+              {deliveryStatuses.map(
+                (status) => (
 
-                <option
-                  key={status}
-                  value={status}
-                >
-                  {status}
-                </option>
+                  <option
+                    key={status}
+                    value={status}
+                  >
+                    {status}
+                  </option>
 
-              ))}
+                )
+              )}
 
             </select>
 
@@ -1421,7 +1552,9 @@ function Admin() {
               className="dashboard-filter"
               value={requestStatusFilter}
               onChange={(e) =>
-                setRequestStatusFilter(e.target.value)
+                setRequestStatusFilter(
+                  e.target.value
+                )
               }
             >
 
@@ -1429,16 +1562,18 @@ function Admin() {
                 All Request Statuses
               </option>
 
-              {requestStatuses.map((status) => (
+              {requestStatuses.map(
+                (status) => (
 
-                <option
-                  key={status}
-                  value={status}
-                >
-                  {status}
-                </option>
+                  <option
+                    key={status}
+                    value={status}
+                  >
+                    {status}
+                  </option>
 
-              ))}
+                )
+              )}
 
             </select>
 
@@ -1475,11 +1610,27 @@ function Admin() {
                 <thead>
 
                   <tr>
-                    <th>Donor</th>
-                    <th>Food</th>
-                    <th>NGO</th>
-                    <th>Quantity</th>
-                    <th>Status</th>
+
+                    <th>
+                      Donor
+                    </th>
+
+                    <th>
+                      Food
+                    </th>
+
+                    <th>
+                      NGO
+                    </th>
+
+                    <th>
+                      Quantity
+                    </th>
+
+                    <th>
+                      Status
+                    </th>
+
                   </tr>
 
                 </thead>
@@ -1541,6 +1692,7 @@ function Admin() {
             <div className="section-heading database-section-heading">
 
               <div>
+
                 <span className="section-label">
                   DATABASE IMPLEMENTATION
                 </span>
@@ -1550,8 +1702,10 @@ function Admin() {
                 </h2>
 
                 <p>
-                  Live output from the database objects used by the admin dashboard.
+                  Live output from the database objects used
+                  by the admin dashboard.
                 </p>
+
               </div>
 
             </div>
@@ -1559,6 +1713,7 @@ function Admin() {
             <div className="database-features-grid">
 
               {/* VIEW OUTPUT */}
+
               <div className="database-feature-card database-output-card">
 
                 <div className="database-feature-top">
@@ -1568,6 +1723,7 @@ function Admin() {
                   </div>
 
                   <div className="database-feature-content">
+
                     <span className="database-feature-label">
                       DATABASE VIEW
                     </span>
@@ -1576,64 +1732,114 @@ function Admin() {
                       {dashboard.database_features?.view_name ||
                         "admin_donation_summary"}
                     </h3>
+
                   </div>
 
                 </div>
 
                 <p className="database-feature-description">
+
                   {dashboard.database_features?.view_description ||
                     "Groups food donations by category and calculates the total donation count and quantity."}
+
                 </p>
 
                 <div className="database-output-title">
-                  <span>VIEW OUTPUT</span>
-                  <small>Live database result</small>
+
+                  <span>
+                    VIEW OUTPUT
+                  </span>
+
+                  <small>
+                    Live database result
+                  </small>
+
                 </div>
 
                 {dashboard.donations_by_category.length > 0 ? (
+
                   <div className="database-output-table-wrapper">
+
                     <table className="database-output-table">
+
                       <thead>
+
                         <tr>
-                          <th>Food Category</th>
-                          <th>Donations</th>
-                          <th>Quantity</th>
+
+                          <th>
+                            Food Category
+                          </th>
+
+                          <th>
+                            Donations
+                          </th>
+
+                          <th>
+                            Quantity
+                          </th>
+
                         </tr>
+
                       </thead>
 
                       <tbody>
+
                         {dashboard.donations_by_category.map(
                           (item, index) => (
+
                             <tr
                               key={`${item.food_category}-${index}`}
                             >
+
                               <td>
+
                                 <span className="database-category-name">
                                   🍽️ {item.food_category}
                                 </span>
+
                               </td>
-                              <td>{item.total_donations}</td>
-                              <td>{item.total_quantity}</td>
+
+                              <td>
+                                {item.total_donations}
+                              </td>
+
+                              <td>
+                                {item.total_quantity}
+                              </td>
+
                             </tr>
+
                           )
                         )}
+
                       </tbody>
+
                     </table>
+
                   </div>
+
                 ) : (
+
                   <div className="database-empty">
                     No View output available.
                   </div>
+
                 )}
 
                 <div className="database-feature-status">
-                  <span>✓</span>
+
+                  <span>
+                    ✓
+                  </span>
+
                   View executed successfully
+
                 </div>
 
               </div>
 
               {/* STORED PROCEDURE OUTPUT */}
+
               <div className="database-feature-card database-output-card">
 
                 <div className="database-feature-top">
@@ -1643,6 +1849,7 @@ function Admin() {
                   </div>
 
                   <div className="database-feature-content">
+
                     <span className="database-feature-label">
                       STORED PROCEDURE
                     </span>
@@ -1651,62 +1858,91 @@ function Admin() {
                       {dashboard.database_features?.procedure_name ||
                         "get_admin_summary()"}
                     </h3>
+
                   </div>
 
                 </div>
 
                 <p className="database-feature-description">
+
                   {dashboard.database_features?.procedure_description ||
                     "Returns the total donors, NGOs, volunteers, donations, requests, deliveries and recipients."}
+
                 </p>
 
                 <div className="database-output-title">
-                  <span>PROCEDURE OUTPUT</span>
-                  <small>Live database result</small>
+
+                  <span>
+                    PROCEDURE OUTPUT
+                  </span>
+
+                  <small>
+                    Live database result
+                  </small>
+
                 </div>
 
                 <div className="procedure-output-grid">
 
                   <div className="procedure-output-item">
                     <span>Donors</span>
-                    <strong>{dashboard.summary.donors}</strong>
+                    <strong>
+                      {dashboard.summary.donors}
+                    </strong>
                   </div>
 
                   <div className="procedure-output-item">
                     <span>NGOs</span>
-                    <strong>{dashboard.summary.ngos}</strong>
+                    <strong>
+                      {dashboard.summary.ngos}
+                    </strong>
                   </div>
 
                   <div className="procedure-output-item">
                     <span>Volunteers</span>
-                    <strong>{dashboard.summary.volunteers}</strong>
+                    <strong>
+                      {dashboard.summary.volunteers}
+                    </strong>
                   </div>
 
                   <div className="procedure-output-item">
                     <span>Donations</span>
-                    <strong>{dashboard.summary.donations}</strong>
+                    <strong>
+                      {dashboard.summary.donations}
+                    </strong>
                   </div>
 
                   <div className="procedure-output-item">
                     <span>Requests</span>
-                    <strong>{dashboard.summary.requests}</strong>
+                    <strong>
+                      {dashboard.summary.requests}
+                    </strong>
                   </div>
 
                   <div className="procedure-output-item">
                     <span>Deliveries</span>
-                    <strong>{dashboard.summary.deliveries}</strong>
+                    <strong>
+                      {dashboard.summary.deliveries}
+                    </strong>
                   </div>
 
                   <div className="procedure-output-item">
                     <span>Recipients</span>
-                    <strong>{dashboard.summary.recipients}</strong>
+                    <strong>
+                      {dashboard.summary.recipients}
+                    </strong>
                   </div>
 
                 </div>
 
                 <div className="database-feature-status">
-                  <span>✓</span>
+
+                  <span>
+                    ✓
+                  </span>
+
                   Stored procedure executed successfully
+
                 </div>
 
               </div>
