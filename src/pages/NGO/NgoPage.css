@@ -56,6 +56,13 @@
   font-size: 12px;
 }
 
+.ngo-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ngo-recipients-link,
 .ngo-logout,
 .ngo-refresh-button {
   border: 1px solid #cedbd2;
@@ -65,8 +72,10 @@
   padding: 10px 17px;
   font-weight: 700;
   cursor: pointer;
+  text-decoration: none;
 }
 
+.ngo-recipients-link:hover,
 .ngo-logout:hover,
 .ngo-refresh-button:hover {
   background: #edf6f0;

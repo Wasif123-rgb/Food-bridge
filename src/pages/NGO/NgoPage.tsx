@@ -419,16 +419,21 @@ function NgoPage() {
             </span>
           </Link>
 
-          <button
-            type="button"
-            className="ngo-logout"
-            onClick={handleLogout}
-            disabled={loggingOut}
-          >
-            {loggingOut
-              ? "Logging out..."
-              : "Log out"}
-          </button>
+          <div className="ngo-header-actions">
+            <Link to="/recipients" className="ngo-recipients-link">
+              Recipients
+            </Link>
+            <button
+              type="button"
+              className="ngo-logout"
+              onClick={handleLogout}
+              disabled={loggingOut}
+            >
+              {loggingOut
+                ? "Logging out..."
+                : "Log out"}
+            </button>
+          </div>
         </div>
       </header>
 

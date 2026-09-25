@@ -124,11 +124,6 @@ Route::middleware('auth:sanctum')->group(function () {
     );
 
     Route::apiResource(
-        'recipients',
-        RecipientController::class
-    );
-
-    Route::apiResource(
         'delivery-updates',
         DeliveryUpdateController::class
     );
@@ -160,5 +155,17 @@ Route::middleware('auth:sanctum')->group(function () {
         '/ngo/requests',
         [NgoController::class, 'requestFood']
     );
+
+    Route::get('/ngo/recipients', [RecipientController::class, 'index']);
+    Route::post('/ngo/recipients', [RecipientController::class, 'store']);
+    Route::get('/ngo/recipients/{recipientNo}', [RecipientController::class, 'show']);
+    Route::patch('/ngo/recipients/{recipientNo}', [RecipientController::class, 'update']);
+    Route::get('/ngo/recipients/{recipientNo}/deliveries', [RecipientController::class, 'deliveries']);
+
+    Route::get('/recipient/profile', [RecipientController::class, 'currentProfile']);
+    Route::post('/recipient/profile', [RecipientController::class, 'createCurrentProfile']);
+    Route::patch('/recipient/profile', [RecipientController::class, 'updateCurrentProfile']);
+    Route::get('/recipient/ngos', [RecipientController::class, 'verifiedNgos']);
+    Route::get('/recipient/deliveries', [RecipientController::class, 'currentDeliveries']);
 
 });

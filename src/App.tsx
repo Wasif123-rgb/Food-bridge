@@ -8,6 +8,7 @@ import VolunteerPage from "./pages/Volunteer/VolunteerPage";
 import ProtectedRoute from "./pages/Auth/ProtectedRoute";
 import NgoPage from "./pages/NGO/NgoPage";
 import Admin from "./pages/Admin/Admin";
+import RecipientPage from "./pages/Recipient/RecipientPage";
 
 function App() {
   return (
@@ -44,6 +45,22 @@ function App() {
           element={
             <ProtectedRoute requiredRole="ngo">
               <NgoPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recipients"
+          element={
+            <ProtectedRoute requiredRole="ngo">
+              <RecipientPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recipient"
+          element={
+            <ProtectedRoute requiredRole="recipient">
+              <RecipientPage />
             </ProtectedRoute>
           }
         />
