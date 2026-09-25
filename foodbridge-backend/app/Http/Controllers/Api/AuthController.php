@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Donor;
 use App\Models\Volunteer;
 use App\Models\Ngo;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -26,8 +27,13 @@ class AuthController extends Controller
 
         $result = DB::transaction(function () use ($validated) {
 
+            $role = Role::firstOrCreate([
+                'name' => $validated['role'],
+            ]);
+
             // Create user
             $user = User::create([
+                'role_id' => $role->id,
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'phone' => $validated['phone'],

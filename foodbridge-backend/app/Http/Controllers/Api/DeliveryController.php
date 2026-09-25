@@ -29,6 +29,7 @@ class DeliveryController extends Controller
         $validated = $request->validate([
             'request_id' => 'required|exists:food_requests,id',
             'volunteer_id' => 'nullable|exists:volunteers,id',
+            'recipient_id' => 'nullable|exists:recipients,id',
             'pickup_time' => 'nullable|date',
             'delivered_at' => 'nullable|date',
             'delivery_status' => 'sometimes|string|max:50',
@@ -38,6 +39,16 @@ class DeliveryController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'This food request already has a delivery assignment.',
+            ], 422);
+        }
+
+        if (! empty($validated['recipient_id']) && ! $this->recipientMatchesRequest(
+            (int) $validated['recipient_id'],
+            (int) $validated['request_id']
+        )) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The recipient must belong to the NGO that created the food request.',
             ], 422);
         }
 
@@ -87,10 +98,21 @@ class DeliveryController extends Controller
         $validated = $request->validate([
             'request_id' => 'sometimes|required|exists:food_requests,id',
             'volunteer_id' => 'nullable|exists:volunteers,id',
+            'recipient_id' => 'nullable|exists:recipients,id',
             'pickup_time' => 'nullable|date',
             'delivered_at' => 'nullable|date',
             'delivery_status' => 'sometimes|string|max:50',
         ]);
+
+        $requestId = (int) ($validated['request_id'] ?? $delivery->request_id);
+        $recipientId = $validated['recipient_id'] ?? $delivery->recipient_id;
+
+        if ($recipientId && ! $this->recipientMatchesRequest((int) $recipientId, $requestId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The recipient must belong to the NGO that created the food request.',
+            ], 422);
+        }
 
         $delivery->update($validated);
 
@@ -118,5 +140,16 @@ class DeliveryController extends Controller
     private function authorizeAdmin(Request $request): void
     {
         abort_unless($request->user()?->role === 'admin', 403, 'Admin access only.');
+    }
+
+    private function recipientMatchesRequest(int $recipientId, int $requestId): bool
+    {
+        return DB::selectOne(<<<'SQL'
+            SELECT 1 AS matches_request
+            FROM recipients r
+            INNER JOIN food_requests fr ON fr.ngo_id = r.ngo_id
+            WHERE r.id = ? AND fr.id = ?
+            LIMIT 1
+        SQL, [$recipientId, $requestId]) !== null;
     }
 }

@@ -42,6 +42,8 @@ function Login() {
       // Save user information
       localStorage.setItem("user", JSON.stringify(data.user));
 
+      localStorage.setItem("user_role", data.user.role);
+
       // Go to the dashboard for the authenticated role
       if (data.user.role === "admin") {
   navigate("/admin");
@@ -49,6 +51,8 @@ function Login() {
   navigate("/volunteer");
 } else if (data.user.role === "ngo") {
   navigate("/ngo");
+} else if (data.user.role === "recipient") {
+  navigate("/recipient");
 } else {
   navigate("/donate");
 }

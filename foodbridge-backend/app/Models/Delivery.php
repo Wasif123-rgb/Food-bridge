@@ -12,6 +12,7 @@ class Delivery extends Model
     protected $fillable = [
         'request_id',
         'volunteer_id',
+        'recipient_id',
         'pickup_time',
         'delivered_at',
         'delivery_status',
