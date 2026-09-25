@@ -94,8 +94,30 @@ class VolunteerDashboardTest extends TestCase
             ->getJson('/api/volunteer/deliveries')
             ->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $assigned->id)
-            ->assertJsonPath('data.0.food_request.ngo_id', $ngo->id);
+            ->assertJsonPath('data.0.delivery_id', $assigned->id)
+            ->assertJsonPath('data.0.ngo_id', $ngo->id)
+            ->assertJsonPath('data.0.food_name', 'Rice');
+
+        $this->actingAs($user, 'sanctum')
+            ->patchJson('/api/volunteer/deliveries/'.$assigned->id.'/status', [
+                'delivery_status' => 'cancelled',
+            ])
+            ->assertUnprocessable();
+
+        $otherDelivery = Delivery::where('volunteer_id', $otherVolunteer->id)->firstOrFail();
+
+        $this->actingAs($user, 'sanctum')
+            ->patchJson('/api/volunteer/deliveries/'.$otherDelivery->id.'/status', [
+                'delivery_status' => 'picked_up',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/deliveries', [
+                'request_id' => $request->id,
+                'volunteer_id' => $volunteer->id,
+            ])
+            ->assertForbidden();
     }
 
     private function createDonorUser(): int

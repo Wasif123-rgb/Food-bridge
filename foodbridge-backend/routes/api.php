@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\RecipientController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\DeliveryUpdateController;
 use App\Http\Controllers\Api\FeedbackController;
+use App\Http\Controllers\Api\VolunteerDeliveryController;
 
 
 // ==================== AUTH ROUTES ====================
@@ -81,7 +82,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get(
         '/volunteer/deliveries',
-        [VolunteerController::class, 'assignedDeliveries']
+        [VolunteerDeliveryController::class, 'index']
+    );
+
+    Route::patch(
+        '/volunteer/deliveries/{deliveryId}/status',
+        [VolunteerDeliveryController::class, 'updateStatus']
     );
 
 
