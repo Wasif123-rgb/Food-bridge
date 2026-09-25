@@ -539,6 +539,38 @@
   word-break: break-word;
 }
 
+.volunteer-delivery-messages {
+  min-height: 24px;
+  margin: -8px 0 12px;
+}
+
+.volunteer-delivery-messages p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.volunteer-delivery-action {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 20px;
+  border: 1px solid var(--volunteer-green);
+  border-radius: 12px;
+  background: var(--volunteer-green-soft);
+  color: var(--volunteer-green-dark);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.volunteer-delivery-action:hover:not(:disabled) {
+  background: #dff2e7;
+}
+
+.volunteer-delivery-action:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
 .volunteer-detail-wide {
   grid-column: 1 / -1;
 }

@@ -12,15 +12,29 @@ type VolunteerProfile = {
 };
 
 type Delivery = {
-  id: number;
+  delivery_id: number;
   request_id: number;
   volunteer_id: number;
+  ngo_id: number;
+  ngo_name: string;
+  ngo_email: string;
+  ngo_phone: string;
+  ngo_address: string | null;
+  food_name: string;
+  food_category: string;
+  quantity: string | number;
+  unit: string;
+  pickup_contact: string;
+  pickup_phone: string;
+  pickup_address: string | null;
+  recipient_name: string | null;
+  recipient_phone: string | null;
+  destination_address: string | null;
+  household_size: number | null;
   pickup_time: string | null;
   delivered_at: string | null;
-  delivery_status: string;
-  food_request?: {
-    ngo_id: number;
-  } | null;
+  delivery_status: "pending" | "picked_up" | "in_transit" | "delivered";
+  request_status: string;
 };
 
 const API_URL = "http://127.0.0.1:8000/api";
@@ -57,6 +71,16 @@ const firstApiError = (data: { message?: string; errors?: Record<string, string[
   return validationError || data.message || "Something went wrong. Please try again.";
 };
 
+const nextDeliveryStatus = (status: Delivery["delivery_status"]) => {
+  if (status === "pending") return { value: "picked_up", label: "Mark as picked up" };
+  if (status === "picked_up") return { value: "in_transit", label: "Start delivery" };
+  if (status === "in_transit") return { value: "delivered", label: "Mark as delivered" };
+  return null;
+};
+
+const humanizeStatus = (status: string) =>
+  status.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+
 function VolunteerPage() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<VolunteerProfile | null>(null);
@@ -65,6 +89,9 @@ function VolunteerPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [updatingDeliveryId, setUpdatingDeliveryId] = useState<number | null>(null);
+  const [deliveryMessage, setDeliveryMessage] = useState("");
+  const [deliveryError, setDeliveryError] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -235,6 +262,54 @@ function VolunteerPage() {
     }
   };
 
+  const handleStatusUpdate = async (delivery: Delivery) => {
+    const nextStatus = nextDeliveryStatus(delivery.delivery_status);
+    if (!nextStatus) return;
+
+    setUpdatingDeliveryId(delivery.delivery_id);
+    setDeliveryMessage("");
+    setDeliveryError("");
+
+    try {
+      const response = await fetch(
+        `${API_URL}/volunteer/deliveries/${delivery.delivery_id}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          },
+          body: JSON.stringify({ delivery_status: nextStatus.value }),
+        },
+      );
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(firstApiError(data));
+
+      const refreshedResponse = await fetch(`${API_URL}/volunteer/deliveries`, {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        },
+      });
+      const refreshedData = await refreshedResponse.json();
+
+      if (!refreshedResponse.ok) throw new Error(firstApiError(refreshedData));
+
+      setDeliveries(refreshedData.data);
+      setDeliveryMessage(data.message || "Delivery status updated successfully.");
+    } catch (updateError) {
+      setDeliveryError(
+        updateError instanceof Error
+          ? updateError.message
+          : "Unable to update the delivery status.",
+      );
+    } finally {
+      setUpdatingDeliveryId(null);
+    }
+  };
+
   return (
     <div className="volunteer-page">
       <header className="volunteer-header">
@@ -389,6 +464,11 @@ function VolunteerPage() {
                   <p>{deliveries.length} {deliveries.length === 1 ? "delivery" : "deliveries"}</p>
                 </div>
 
+                <div className="volunteer-delivery-messages" aria-live="polite">
+                  {deliveryMessage && <p className="volunteer-success">{deliveryMessage}</p>}
+                  {deliveryError && <p className="volunteer-error">{deliveryError}</p>}
+                </div>
+
                 {deliveries.length === 0 ? (
                   <div className="volunteer-empty-state">
                     <div className="volunteer-empty-icon" aria-hidden="true">✓</div>
@@ -398,22 +478,39 @@ function VolunteerPage() {
                 ) : (
                   <div className="volunteer-delivery-grid">
                     {deliveries.map((delivery) => (
-                      <article className="volunteer-delivery-card" key={delivery.id}>
+                      <article className="volunteer-delivery-card" key={delivery.delivery_id}>
                         <div className="volunteer-delivery-card-header">
                           <div>
                             <span>Delivery</span>
-                            <h3>#{delivery.id}</h3>
+                            <h3>#{delivery.delivery_id}</h3>
                           </div>
-                          <span className="volunteer-delivery-status">{delivery.delivery_status}</span>
+                          <span className="volunteer-delivery-status">{humanizeStatus(delivery.delivery_status)}</span>
                         </div>
                         <dl>
                           <div><dt>Request ID</dt><dd>#{delivery.request_id}</dd></div>
-                          <div><dt>Volunteer ID</dt><dd>#{delivery.volunteer_id}</dd></div>
-                          <div><dt>NGO ID</dt><dd>{delivery.food_request?.ngo_id ? `#${delivery.food_request.ngo_id}` : "Unavailable"}</dd></div>
-                          <div><dt>Status</dt><dd>{delivery.delivery_status}</dd></div>
+                          <div><dt>Food</dt><dd>{delivery.food_name} ({delivery.food_category})</dd></div>
+                          <div><dt>Quantity</dt><dd>{delivery.quantity} {delivery.unit}</dd></div>
+                          <div><dt>NGO</dt><dd>{delivery.ngo_name}</dd></div>
+                          <div><dt>NGO Contact</dt><dd>{delivery.ngo_phone || delivery.ngo_email}</dd></div>
+                          <div><dt>Recipient</dt><dd>{delivery.recipient_name || "Assigned by NGO"}</dd></div>
+                          <div><dt>Recipient Phone</dt><dd>{delivery.recipient_phone || "Unavailable"}</dd></div>
+                          <div className="volunteer-detail-wide"><dt>Pickup</dt><dd>{delivery.pickup_contact} · {delivery.pickup_phone}<br />{delivery.pickup_address || "Address unavailable"}</dd></div>
+                          <div className="volunteer-detail-wide"><dt>Destination</dt><dd>{delivery.destination_address || delivery.ngo_address || "Address unavailable"}</dd></div>
                           <div className="volunteer-detail-wide"><dt>Pickup Time</dt><dd>{formatDate(delivery.pickup_time)}</dd></div>
                           <div className="volunteer-detail-wide"><dt>Delivered At</dt><dd>{formatDate(delivery.delivered_at)}</dd></div>
                         </dl>
+                        {nextDeliveryStatus(delivery.delivery_status) && (
+                          <button
+                            className="volunteer-delivery-action"
+                            type="button"
+                            disabled={updatingDeliveryId === delivery.delivery_id}
+                            onClick={() => handleStatusUpdate(delivery)}
+                          >
+                            {updatingDeliveryId === delivery.delivery_id
+                              ? "Updating..."
+                              : nextDeliveryStatus(delivery.delivery_status)?.label}
+                          </button>
+                        )}
                       </article>
                     ))}
                   </div>
