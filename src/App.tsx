@@ -10,17 +10,32 @@ import NgoPage from "./pages/NGO/NgoPage";
 import Admin from "./pages/Admin/Admin";
 import RecipientPage from "./pages/Recipient/RecipientPage";
 import FeedbackPage from "./pages/Feedback/FeedbackPage";
+import FeedbackList from "./pages/Feedback/FeedbackList";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public pages */}
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+        {/* =========================================================
+            PUBLIC PAGES
+        ========================================================= */}
 
-        {/* Donor page */}
+        <Route path="/" element={<Home />} />
+
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="/signup"
+          element={<Signup />}
+        />
+
+        {/* =========================================================
+            DONOR
+        ========================================================= */}
+
         <Route
           path="/donate"
           element={
@@ -30,7 +45,10 @@ function App() {
           }
         />
 
-        {/* Volunteer page */}
+        {/* =========================================================
+            VOLUNTEER
+        ========================================================= */}
+
         <Route
           path="/volunteer"
           element={
@@ -40,7 +58,10 @@ function App() {
           }
         />
 
-        {/* NGO Dashboard */}
+        {/* =========================================================
+            NGO DASHBOARD
+        ========================================================= */}
+
         <Route
           path="/ngo"
           element={
@@ -49,6 +70,11 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* =========================================================
+            NGO RECIPIENTS
+        ========================================================= */}
+
         <Route
           path="/recipients"
           element={
@@ -57,6 +83,11 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* =========================================================
+            INDIVIDUAL RECIPIENT
+        ========================================================= */}
+
         <Route
           path="/recipient"
           element={
@@ -65,22 +96,48 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* =========================================================
+            FEEDBACK
+        ========================================================= */}
+
         <Route
           path="/feedback/:deliveryId"
           element={
-            <ProtectedRoute requiredRole="recipient">
+            <ProtectedRoute requiredRole={["ngo", "recipient"]}>
               <FeedbackPage />
             </ProtectedRoute>
           }
         />
         <Route
-  path="/admin"
-  element={
-    <ProtectedRoute requiredRole="admin">
-      <Admin />
-    </ProtectedRoute>
-  }
-/>
+          path="/feedback"
+          element={
+            <ProtectedRoute requiredRole={["ngo", "recipient"]}>
+              <FeedbackList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/feedback/view/:deliveryId"
+          element={
+            <ProtectedRoute requiredRole={["ngo", "recipient"]}>
+              <FeedbackList />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* =========================================================
+            ADMIN
+        ========================================================= */}
+
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <Admin />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

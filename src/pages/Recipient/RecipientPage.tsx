@@ -305,6 +305,14 @@ export default function RecipientPage() {
                               Give Feedback
                             </Link>
                           )}
+                          {!Boolean(delivery.can_submit_feedback) && delivery.delivery_status.toLowerCase() === "delivered" && (
+                            <Link
+                              className="recipient-feedback-button"
+                              to={`/feedback/view/${delivery.delivery_id}`}
+                            >
+                              View Feedback
+                            </Link>
+                      )}
                         </div>
                       ))}
                     </div>

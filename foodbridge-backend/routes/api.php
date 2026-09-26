@@ -16,35 +16,41 @@ use App\Http\Controllers\Api\FeedbackController;
 use App\Http\Controllers\Api\VolunteerDeliveryController;
 
 
-// ==================== AUTH ROUTES ====================
+/*
+|--------------------------------------------------------------------------
+| PUBLIC ROUTES
+|--------------------------------------------------------------------------
+*/
 
-Route::post(
-    '/register',
-    [AuthController::class, 'register']
-);
+Route::post('/register', [AuthController::class, 'register']);
 
-Route::post(
-    '/login',
-    [AuthController::class, 'login']
-);
+Route::post('/login', [AuthController::class, 'login']);
 
 
-// ==================== PROTECTED ROUTES ====================
+/*
+|--------------------------------------------------------------------------
+| AUTHENTICATED ROUTES
+|--------------------------------------------------------------------------
+*/
 
 Route::middleware('auth:sanctum')->group(function () {
 
-    Route::get(
-        '/user',
-        [AuthController::class, 'user']
-    );
+    /*
+    |--------------------------------------------------------------------------
+    | AUTH
+    |--------------------------------------------------------------------------
+    */
 
-    Route::post(
-        '/logout',
-        [AuthController::class, 'logout']
-    );
+    Route::get('/user', [AuthController::class, 'user']);
+
+    Route::post('/logout', [AuthController::class, 'logout']);
 
 
-    // ==================== ADMIN ====================
+    /*
+    |--------------------------------------------------------------------------
+    | ADMIN
+    |--------------------------------------------------------------------------
+    */
 
     Route::get(
         '/admin/dashboard',
@@ -71,14 +77,17 @@ Route::middleware('auth:sanctum')->group(function () {
         [AdminController::class, 'unverifyNgo']
     );
 
-    // Raw SQL transaction demonstration
     Route::post(
         '/admin/transactions/demo',
         [AdminController::class, 'transactionDemo']
     );
 
 
-    // ==================== VOLUNTEER ====================
+    /*
+    |--------------------------------------------------------------------------
+    | VOLUNTEER
+    |--------------------------------------------------------------------------
+    */
 
     Route::get(
         '/volunteer/profile',
@@ -101,7 +110,11 @@ Route::middleware('auth:sanctum')->group(function () {
     );
 
 
-    // ==================== RESOURCES ====================
+    /*
+    |--------------------------------------------------------------------------
+    | GENERAL API RESOURCES
+    |--------------------------------------------------------------------------
+    */
 
     Route::apiResource(
         'donors',
@@ -138,13 +151,37 @@ Route::middleware('auth:sanctum')->group(function () {
         DeliveryUpdateController::class
     );
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | FEEDBACK
+    |--------------------------------------------------------------------------
+    |
+    | The custom delivery route is placed before the resource routes.
+    |
+    | GET /feedback/delivery/{deliveryId}
+    |
+    | This allows both NGO and Recipient to load the delivery associated
+    | with the feedback page.
+    |
+    */
+
+    Route::get(
+        '/feedback/delivery/{deliveryId}',
+        [FeedbackController::class, 'delivery']
+    );
+
     Route::apiResource(
         'feedback',
         FeedbackController::class
     );
 
 
-    // ==================== NGO ====================
+    /*
+    |--------------------------------------------------------------------------
+    | NGO
+    |--------------------------------------------------------------------------
+    */
 
     Route::get(
         '/ngo/profile',
@@ -192,7 +229,11 @@ Route::middleware('auth:sanctum')->group(function () {
     );
 
 
-    // ==================== RECIPIENT ====================
+    /*
+    |--------------------------------------------------------------------------
+    | RECIPIENT
+    |--------------------------------------------------------------------------
+    */
 
     Route::get(
         '/recipient/profile',
@@ -218,5 +259,4 @@ Route::middleware('auth:sanctum')->group(function () {
         '/recipient/deliveries',
         [RecipientController::class, 'currentDeliveries']
     );
-
 });
