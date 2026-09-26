@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -473,6 +474,173 @@ class AdminController extends Controller
 
     /*
     |--------------------------------------------------------------------------
+    | DELIVERY ASSIGNMENT OPTIONS
+    |--------------------------------------------------------------------------
+    */
+
+    public function deliveryOptions(Request $request)
+    {
+        $this->authorizeAdmin($request);
+
+        /*
+        |--------------------------------------------------------------------------
+        | FOOD REQUESTS WAITING FOR DELIVERY
+        |--------------------------------------------------------------------------
+        |
+        | Only requests without an existing delivery are shown.
+        |
+        */
+
+        $requests = DB::select("
+            SELECT
+                fr.id AS request_id,
+                fr.ngo_id,
+                n.ngo_name,
+                fr.requested_qty,
+                fr.request_status,
+                fr.requested_at,
+
+                fd.id AS donation_id,
+                fd.food_name,
+                fd.food_category,
+                fd.unit,
+
+                d.donor_name,
+                d.phone AS donor_phone,
+                d.address AS donor_address
+
+            FROM food_requests fr
+
+            INNER JOIN ngos n
+                ON n.id = fr.ngo_id
+
+            INNER JOIN food_donations fd
+                ON fd.id = fr.donation_id
+
+            INNER JOIN donors d
+                ON d.id = fd.donor_id
+
+            LEFT JOIN deliveries delivery
+                ON delivery.request_id = fr.id
+
+            WHERE delivery.id IS NULL
+
+            ORDER BY fr.requested_at ASC, fr.id ASC
+        ");
+
+        /*
+        |--------------------------------------------------------------------------
+        | AVAILABLE VOLUNTEERS
+        |--------------------------------------------------------------------------
+        */
+
+        $volunteers = DB::select("
+            SELECT
+                id,
+                full_name,
+                email,
+                phone,
+                vehicle_type,
+                availability_status
+            FROM volunteers
+            WHERE LOWER(availability_status) = 'available'
+            ORDER BY full_name ASC
+        ");
+
+        return response()->json([
+            'success' => true,
+            'requests' => $requests,
+            'available_volunteers' => $volunteers,
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | RECIPIENTS FOR A FOOD REQUEST
+    |--------------------------------------------------------------------------
+    */
+
+    public function recipientsForRequest(
+        Request $request,
+        string $requestId
+    ) {
+        $this->authorizeAdmin($request);
+
+        /*
+        |--------------------------------------------------------------------------
+        | FIND FOOD REQUEST
+        |--------------------------------------------------------------------------
+        */
+
+        $foodRequest = DB::selectOne("
+            SELECT
+                fr.id,
+                fr.ngo_id,
+                n.ngo_name
+            FROM food_requests fr
+            INNER JOIN ngos n
+                ON n.id = fr.ngo_id
+            WHERE fr.id = ?
+            LIMIT 1
+        ", [$requestId]);
+
+        if (! $foodRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Food request not found.',
+            ], 404);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | RECIPIENTS BELONGING TO THE REQUEST NGO
+        |--------------------------------------------------------------------------
+        */
+
+        $recipients = DB::select("
+            SELECT
+                id,
+                ngo_id,
+                recipient_no,
+                full_name,
+                address,
+                phone,
+                household_size
+            FROM recipients
+            WHERE ngo_id = ?
+            ORDER BY recipient_no ASC, id ASC
+        ", [$foodRequest->ngo_id]);
+
+        return response()->json([
+            'success' => true,
+
+            'request' => [
+                'id' => (int) $foodRequest->id,
+                'ngo_id' => (int) $foodRequest->ngo_id,
+                'ngo_name' => $foodRequest->ngo_name,
+            ],
+
+            'recipients' => $recipients,
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADMIN AUTHORIZATION
+    |--------------------------------------------------------------------------
+    */
+
+    private function authorizeAdmin(Request $request): void
+    {
+        abort_unless(
+            $request->user()?->role === 'admin',
+            403,
+            'Admin access only.'
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | RAW SQL TRANSACTION DEMONSTRATION
     |--------------------------------------------------------------------------
     */
@@ -486,10 +654,6 @@ class AdminController extends Controller
             |--------------------------------------------------------------------------
             | CLEAN START
             |--------------------------------------------------------------------------
-            |
-            | Make absolutely sure an old temporary table from this connection
-            | cannot interfere with the new demonstration.
-            |
             */
 
             $connection->statement("
@@ -820,7 +984,7 @@ class AdminController extends Controller
             LIMIT 1
         ", [$id]);
 
-        if (!$ngo) {
+        if (! $ngo) {
             return response()->json([
                 'success' => false,
                 'message' => 'NGO not found.',
@@ -870,7 +1034,7 @@ class AdminController extends Controller
             LIMIT 1
         ", [$id]);
 
-        if (!$ngo) {
+        if (! $ngo) {
             return response()->json([
                 'success' => false,
                 'message' => 'NGO not found.',

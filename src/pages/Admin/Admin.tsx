@@ -131,6 +131,61 @@ type DashboardData = {
   };
 };
 
+/* =========================================================
+   DELIVERY ASSIGNMENT TYPES
+========================================================= */
+
+type DeliveryRequestOption = {
+  request_id: number;
+  ngo_id: number;
+  ngo_name: string;
+  requested_qty: string;
+  request_status: string;
+  requested_at: string;
+  donation_id: number;
+  food_name: string;
+  food_category: string;
+  unit: string | null;
+  donor_name: string;
+  donor_phone: string | null;
+  donor_address: string | null;
+};
+
+type AvailableVolunteer = {
+  id: number;
+  full_name: string;
+  email: string;
+  phone: string;
+  vehicle_type: string | null;
+  availability_status: string;
+};
+
+type DeliveryRecipient = {
+  id: number;
+  ngo_id: number;
+  recipient_no: number;
+  full_name: string;
+  address: string | null;
+  phone: string | null;
+  household_size: number | null;
+};
+
+type DeliveryOptionsResponse = {
+  success: boolean;
+  requests: DeliveryRequestOption[];
+  available_volunteers: AvailableVolunteer[];
+};
+
+type RecipientsResponse = {
+  success: boolean;
+  request: {
+    id: number;
+    ngo_id: number;
+    ngo_name: string;
+  };
+  recipients: DeliveryRecipient[];
+};
+
 function Admin() {
   const navigate = useNavigate();
 
@@ -178,68 +233,219 @@ function Admin() {
     useState("all");
 
   // ======================================================
-  // LOAD DASHBOARD + NGOs
+  // DELIVERY ASSIGNMENT
+  // ======================================================
+
+  const [deliveryRequests, setDeliveryRequests] =
+    useState<DeliveryRequestOption[]>([]);
+
+  const [availableVolunteers, setAvailableVolunteers] =
+    useState<AvailableVolunteer[]>([]);
+
+  const [deliveryRecipients, setDeliveryRecipients] =
+    useState<DeliveryRecipient[]>([]);
+
+  const [selectedRequestId, setSelectedRequestId] =
+    useState("");
+
+  const [selectedVolunteerId, setSelectedVolunteerId] =
+    useState("");
+
+  const [selectedRecipientId, setSelectedRecipientId] =
+    useState("");
+
+  const [deliveryLoading, setDeliveryLoading] =
+    useState(false);
+
+  const [recipientLoading, setRecipientLoading] =
+    useState(false);
+
+  const [assignmentLoading, setAssignmentLoading] =
+    useState(false);
+
+  const [deliveryMessage, setDeliveryMessage] =
+    useState("");
+
+  const [deliveryError, setDeliveryError] =
+    useState("");
+
+  // ======================================================
+  // AUTH TOKEN
+  // ======================================================
+
+  const getToken = () => {
+    return localStorage.getItem("auth_token");
+  };
+
+  // ======================================================
+  // LOAD DASHBOARD
+  // ======================================================
+
+  const loadDashboard = async () => {
+    const token = getToken();
+
+    if (!token) {
+      navigate("/login", {
+        replace: true,
+      });
+
+      return;
+    }
+
+    const response = await fetch(
+      "http://127.0.0.1:8000/api/admin/dashboard",
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+          "Failed to load admin dashboard."
+      );
+    }
+
+    setDashboard(data);
+  };
+
+  // ======================================================
+  // LOAD NGOS
+  // ======================================================
+
+  const loadNgos = async () => {
+    const token = getToken();
+
+    if (!token) {
+      navigate("/login", {
+        replace: true,
+      });
+
+      return;
+    }
+
+    const response = await fetch(
+      "http://127.0.0.1:8000/api/ngos",
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+          "Failed to load NGOs."
+      );
+    }
+
+    setNgos(data.data || []);
+  };
+
+  // ======================================================
+  // LOAD DELIVERY OPTIONS
+  // ======================================================
+
+  const loadDeliveryOptions = async () => {
+    const token = getToken();
+
+    if (!token) {
+      navigate("/login", {
+        replace: true,
+      });
+
+      return;
+    }
+
+    try {
+      setDeliveryLoading(true);
+      setDeliveryError("");
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/admin/delivery-options",
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data: DeliveryOptionsResponse =
+        await response.json();
+
+      if (!response.ok || data.success !== true) {
+        throw new Error(
+          (data as any).message ||
+            "Unable to load delivery options."
+        );
+      }
+
+      setDeliveryRequests(
+        Array.isArray(data.requests)
+          ? data.requests
+          : []
+      );
+
+      setAvailableVolunteers(
+        Array.isArray(data.available_volunteers)
+          ? data.available_volunteers
+          : []
+      );
+    } catch (err) {
+      console.error(err);
+
+      setDeliveryError(
+        err instanceof Error
+          ? err.message
+          : "Unable to load delivery options."
+      );
+    } finally {
+      setDeliveryLoading(false);
+    }
+  };
+
+  // ======================================================
+  // INITIAL LOAD
   // ======================================================
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token =
-          localStorage.getItem("auth_token");
+        const token = getToken();
 
         if (!token) {
-          navigate("/login", { replace: true });
+          navigate("/login", {
+            replace: true,
+          });
+
           return;
         }
 
-        const dashboardResponse = await fetch(
-          "http://127.0.0.1:8000/api/admin/dashboard",
-          {
-            method: "GET",
-            headers: {
-              Accept: "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!dashboardResponse.ok) {
-          throw new Error(
-            "Failed to load admin dashboard"
-          );
-        }
-
-        const dashboardData: DashboardData =
-          await dashboardResponse.json();
-
-        setDashboard(dashboardData);
-
-        const ngoResponse = await fetch(
-          "http://127.0.0.1:8000/api/ngos",
-          {
-            method: "GET",
-            headers: {
-              Accept: "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!ngoResponse.ok) {
-          throw new Error(
-            "Failed to load NGOs"
-          );
-        }
-
-        const ngoData =
-          await ngoResponse.json();
-
-        setNgos(ngoData.data || []);
+        await Promise.all([
+          loadDashboard(),
+          loadNgos(),
+          loadDeliveryOptions(),
+        ]);
       } catch (err) {
         console.error(err);
 
         setError(
-          "Unable to load admin dashboard."
+          err instanceof Error
+            ? err.message
+            : "Unable to load admin dashboard."
         );
       } finally {
         setLoading(false);
@@ -248,6 +454,77 @@ function Admin() {
 
     fetchData();
   }, [navigate]);
+
+  // ======================================================
+  // WHEN REQUEST CHANGES, LOAD RECIPIENTS
+  // ======================================================
+
+  useEffect(() => {
+    const loadRecipients = async () => {
+      if (!selectedRequestId) {
+        setDeliveryRecipients([]);
+        setSelectedRecipientId("");
+        return;
+      }
+
+      const token = getToken();
+
+      if (!token) {
+        navigate("/login", {
+          replace: true,
+        });
+
+        return;
+      }
+
+      try {
+        setRecipientLoading(true);
+        setDeliveryError("");
+
+        setDeliveryRecipients([]);
+        setSelectedRecipientId("");
+
+        const response = await fetch(
+          `http://127.0.0.1:8000/api/admin/food-requests/${selectedRequestId}/recipients`,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data: RecipientsResponse =
+          await response.json();
+
+        if (!response.ok || data.success !== true) {
+          throw new Error(
+            (data as any).message ||
+              "Unable to load recipients."
+          );
+        }
+
+        setDeliveryRecipients(
+          Array.isArray(data.recipients)
+            ? data.recipients
+            : []
+        );
+      } catch (err) {
+        console.error(err);
+
+        setDeliveryError(
+          err instanceof Error
+            ? err.message
+            : "Unable to load recipients."
+        );
+      } finally {
+        setRecipientLoading(false);
+      }
+    };
+
+    loadRecipients();
+  }, [selectedRequestId, navigate]);
 
   // ======================================================
   // NGO MESSAGE
@@ -275,8 +552,7 @@ function Admin() {
       setNgoLoading(ngoId);
       setNgoActionMessage("");
 
-      const token =
-        localStorage.getItem("auth_token");
+      const token = getToken();
 
       const endpoint = verify
         ? `http://127.0.0.1:8000/api/admin/ngos/${ngoId}/verify`
@@ -371,6 +647,129 @@ function Admin() {
   };
 
   // ======================================================
+  // ASSIGN DELIVERY
+  // ======================================================
+
+  const handleAssignDelivery = async () => {
+    if (assignmentLoading) {
+      return;
+    }
+
+    setDeliveryMessage("");
+    setDeliveryError("");
+
+    if (!selectedRequestId) {
+      setDeliveryError(
+        "Please select a food request."
+      );
+
+      return;
+    }
+
+    if (!selectedVolunteerId) {
+      setDeliveryError(
+        "Please select an available volunteer."
+      );
+
+      return;
+    }
+
+    if (!selectedRecipientId) {
+      setDeliveryError(
+        "Please select a recipient."
+      );
+
+      return;
+    }
+
+    const token = getToken();
+
+    if (!token) {
+      navigate("/login", {
+        replace: true,
+      });
+
+      return;
+    }
+
+    try {
+      setAssignmentLoading(true);
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/deliveries",
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            request_id: Number(
+              selectedRequestId
+            ),
+
+            volunteer_id: Number(
+              selectedVolunteerId
+            ),
+
+            recipient_id: Number(
+              selectedRecipientId
+            ),
+
+            delivery_status: "pending",
+          }),
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok || data.success !== true) {
+        throw new Error(
+          data.message ||
+            "Unable to assign delivery."
+        );
+      }
+
+      setDeliveryMessage(
+        "Delivery assigned successfully."
+      );
+
+      setSelectedRequestId("");
+      setSelectedVolunteerId("");
+      setSelectedRecipientId("");
+      setDeliveryRecipients([]);
+
+      await Promise.all([
+        loadDashboard(),
+        loadDeliveryOptions(),
+      ]);
+    } catch (err) {
+      console.error(err);
+
+      setDeliveryError(
+        err instanceof Error
+          ? err.message
+          : "Unable to assign delivery."
+      );
+    } finally {
+      setAssignmentLoading(false);
+    }
+  };
+
+  // ======================================================
+  // SELECTED REQUEST
+  // ======================================================
+
+  const selectedRequest =
+    deliveryRequests.find(
+      (request) =>
+        String(request.request_id) ===
+        selectedRequestId
+    );
+
+  // ======================================================
   // RUN RAW SQL TRANSACTION DEMO
   // ======================================================
 
@@ -385,8 +784,7 @@ function Admin() {
 
       setTransactionDemo(null);
 
-      const token =
-        localStorage.getItem("auth_token");
+      const token = getToken();
 
       if (!token) {
         navigate("/login", {
@@ -604,6 +1002,10 @@ function Admin() {
   return (
     <div className="admin-page">
 
+      {/* ==================================================
+          SIDEBAR
+      ================================================== */}
+
       <aside className="admin-sidebar">
 
         <div className="admin-logo">
@@ -647,6 +1049,11 @@ function Admin() {
           <a href="#ngos">
             <span>🤝</span>
             NGOs
+          </a>
+
+          <a href="#delivery-assignment">
+            <span>➕</span>
+            Assign Delivery
           </a>
 
           <a href="#deliveries">
@@ -695,7 +1102,15 @@ function Admin() {
 
       </aside>
 
+      {/* ==================================================
+          MAIN
+      ================================================== */}
+
       <main className="admin-main">
+
+        {/* ==================================================
+            HEADER
+        ================================================== */}
 
         <header
           className="admin-header"
@@ -728,6 +1143,10 @@ function Admin() {
           </div>
 
         </header>
+
+        {/* ==================================================
+            SUMMARY
+        ================================================== */}
 
         <section className="summary-grid">
 
@@ -840,6 +1259,10 @@ function Admin() {
           </div>
 
         </section>
+
+        {/* ==================================================
+            DONATIONS + NGO VERIFICATION
+        ================================================== */}
 
         <section className="dashboard-grid">
 
@@ -1042,6 +1465,10 @@ function Admin() {
           </div>
 
         </section>
+
+        {/* ==================================================
+            NGO MANAGEMENT
+        ================================================== */}
 
         <section className="dashboard-card ngo-management-card">
 
@@ -1271,6 +1698,10 @@ function Admin() {
 
         </section>
 
+        {/* ==================================================
+            DONOR ACTIVITY
+        ================================================== */}
+
         <section className="dashboard-card">
 
           <div className="section-heading">
@@ -1354,6 +1785,10 @@ function Admin() {
           </div>
 
         </section>
+
+        {/* ==================================================
+            REQUESTS + VOLUNTEERS
+        ================================================== */}
 
         <section className="dashboard-grid">
 
@@ -1518,6 +1953,465 @@ function Admin() {
 
         </section>
 
+        {/* ==================================================
+            DELIVERY ASSIGNMENT
+        ================================================== */}
+
+        <section
+          className="dashboard-card delivery-assignment-card"
+          id="delivery-assignment"
+        >
+
+          <div className="section-heading">
+
+            <div>
+
+              <span className="section-label">
+                DELIVERY MANAGEMENT
+              </span>
+
+              <h2>
+                Assign Food Delivery
+              </h2>
+
+              <p>
+                Assign an unassigned food request to an available
+                volunteer and recipient.
+              </p>
+
+            </div>
+
+            <button
+              type="button"
+              className="delivery-refresh-button"
+              onClick={loadDeliveryOptions}
+              disabled={
+                deliveryLoading ||
+                assignmentLoading
+              }
+            >
+              {deliveryLoading
+                ? "Refreshing..."
+                : "↻ Refresh"}
+            </button>
+
+          </div>
+
+          {deliveryMessage && (
+
+            <div className="delivery-success-message">
+              <span>✓</span>
+              {deliveryMessage}
+            </div>
+
+          )}
+
+          {deliveryError && (
+
+            <div className="delivery-error-message">
+              <span>!</span>
+              {deliveryError}
+            </div>
+
+          )}
+
+          {deliveryLoading ? (
+
+            <div className="delivery-loading-state">
+
+              <div className="loading-spinner"></div>
+
+              <p>
+                Loading delivery options...
+              </p>
+
+            </div>
+
+          ) : deliveryRequests.length === 0 ? (
+
+            <div className="delivery-empty-state">
+
+              <div className="delivery-empty-icon">
+                ✓
+              </div>
+
+              <h3>
+                No food requests waiting for assignment
+              </h3>
+
+              <p>
+                All currently available food requests already
+                have delivery assignments, or there are no
+                pending requests yet.
+              </p>
+
+            </div>
+
+          ) : (
+
+            <div className="delivery-assignment-content">
+
+              {/* ==========================================
+                  REQUEST
+              ========================================== */}
+
+              <div className="delivery-form-group">
+
+                <label htmlFor="delivery-request">
+                  Food Request
+                </label>
+
+                <select
+                  id="delivery-request"
+                  className="delivery-select"
+                  value={selectedRequestId}
+                  onChange={(e) => {
+                    setSelectedRequestId(
+                      e.target.value
+                    );
+
+                    setDeliveryMessage("");
+                    setDeliveryError("");
+                  }}
+                  disabled={
+                    assignmentLoading
+                  }
+                >
+
+                  <option value="">
+                    Select a food request
+                  </option>
+
+                  {deliveryRequests.map(
+                    (request) => (
+
+                      <option
+                        key={request.request_id}
+                        value={request.request_id}
+                      >
+                        #{request.request_id} —{" "}
+                        {request.food_name} —{" "}
+                        {request.ngo_name}
+                      </option>
+
+                    )
+                  )}
+
+                </select>
+
+                {selectedRequest && (
+
+                  <div className="selected-request-card">
+
+                    <div className="selected-request-icon">
+                      🍱
+                    </div>
+
+                    <div className="selected-request-details">
+
+                      <strong>
+                        {selectedRequest.food_name}
+                      </strong>
+
+                      <span>
+                        NGO: {selectedRequest.ngo_name}
+                      </span>
+
+                      <span>
+                        Quantity:{" "}
+                        {selectedRequest.requested_qty}
+                        {selectedRequest.unit
+                          ? ` ${selectedRequest.unit}`
+                          : ""}
+                      </span>
+
+                      <span>
+                        Donor:{" "}
+                        {selectedRequest.donor_name}
+                      </span>
+
+                    </div>
+
+                    <span className="request-pending-badge">
+                      {selectedRequest.request_status}
+                    </span>
+
+                  </div>
+
+                )}
+
+              </div>
+
+              {/* ==========================================
+                  VOLUNTEER
+              ========================================== */}
+
+              <div className="delivery-form-group">
+
+                <label htmlFor="delivery-volunteer">
+                  Available Volunteer
+                </label>
+
+                <select
+                  id="delivery-volunteer"
+                  className="delivery-select"
+                  value={selectedVolunteerId}
+                  onChange={(e) => {
+                    setSelectedVolunteerId(
+                      e.target.value
+                    );
+
+                    setDeliveryMessage("");
+                    setDeliveryError("");
+                  }}
+                  disabled={
+                    assignmentLoading ||
+                    availableVolunteers.length === 0
+                  }
+                >
+
+                  <option value="">
+                    {availableVolunteers.length === 0
+                      ? "No available volunteers"
+                      : "Select a volunteer"}
+                  </option>
+
+                  {availableVolunteers.map(
+                    (volunteer) => (
+
+                      <option
+                        key={volunteer.id}
+                        value={volunteer.id}
+                      >
+                        {volunteer.full_name}
+                        {" — "}
+                        {volunteer.vehicle_type ||
+                          "No vehicle specified"}
+                      </option>
+
+                    )
+                  )}
+
+                </select>
+
+                {selectedVolunteerId && (
+
+                  <div className="selected-volunteer-card">
+
+                    {(() => {
+                      const volunteer =
+                        availableVolunteers.find(
+                          (item) =>
+                            String(item.id) ===
+                            selectedVolunteerId
+                        );
+
+                      if (!volunteer) {
+                        return null;
+                      }
+
+                      return (
+                        <>
+                          <div className="assignment-avatar">
+                            {volunteer.full_name
+                              .charAt(0)
+                              .toUpperCase()}
+                          </div>
+
+                          <div>
+
+                            <strong>
+                              {volunteer.full_name}
+                            </strong>
+
+                            <span>
+                              {volunteer.phone}
+                            </span>
+
+                            <span>
+                              {volunteer.vehicle_type ||
+                                "Vehicle not specified"}
+                            </span>
+
+                          </div>
+
+                          <span className="available-badge">
+                            Available
+                          </span>
+                        </>
+                      );
+                    })()}
+
+                  </div>
+
+                )}
+
+              </div>
+
+              {/* ==========================================
+                  RECIPIENT
+              ========================================== */}
+
+              <div className="delivery-form-group">
+
+                <label htmlFor="delivery-recipient">
+                  Recipient
+                </label>
+
+                <select
+                  id="delivery-recipient"
+                  className="delivery-select"
+                  value={selectedRecipientId}
+                  onChange={(e) => {
+                    setSelectedRecipientId(
+                      e.target.value
+                    );
+
+                    setDeliveryMessage("");
+                    setDeliveryError("");
+                  }}
+                  disabled={
+                    assignmentLoading ||
+                    !selectedRequestId ||
+                    recipientLoading ||
+                    deliveryRecipients.length === 0
+                  }
+                >
+
+                  <option value="">
+                    {!selectedRequestId
+                      ? "Select a food request first"
+                      : recipientLoading
+                      ? "Loading recipients..."
+                      : deliveryRecipients.length === 0
+                      ? "No recipients found for this NGO"
+                      : "Select a recipient"}
+                  </option>
+
+                  {deliveryRecipients.map(
+                    (recipient) => (
+
+                      <option
+                        key={recipient.id}
+                        value={recipient.id}
+                      >
+                        #{recipient.recipient_no} —{" "}
+                        {recipient.full_name}
+                      </option>
+
+                    )
+                  )}
+
+                </select>
+
+                {selectedRecipientId && (
+
+                  <div className="selected-recipient-card">
+
+                    {(() => {
+                      const recipient =
+                        deliveryRecipients.find(
+                          (item) =>
+                            String(item.id) ===
+                            selectedRecipientId
+                        );
+
+                      if (!recipient) {
+                        return null;
+                      }
+
+                      return (
+                        <>
+                          <div className="assignment-avatar recipient-avatar">
+                            {recipient.full_name
+                              .charAt(0)
+                              .toUpperCase()}
+                          </div>
+
+                          <div>
+
+                            <strong>
+                              {recipient.full_name}
+                            </strong>
+
+                            <span>
+                              Recipient #
+                              {recipient.recipient_no}
+                            </span>
+
+                            <span>
+                              {recipient.phone ||
+                                "Phone not available"}
+                            </span>
+
+                            <span>
+                              {recipient.address ||
+                                "Address not available"}
+                            </span>
+
+                          </div>
+
+                        </>
+                      );
+                    })()}
+
+                  </div>
+
+                )}
+
+              </div>
+
+            </div>
+
+          )}
+
+          {deliveryRequests.length > 0 && (
+
+            <div className="delivery-assignment-footer">
+
+              <div className="delivery-assignment-info">
+
+                <span className="assignment-info-icon">
+                  i
+                </span>
+
+                <p>
+                  Assigning a delivery will approve the food
+                  request and mark the selected volunteer as
+                  <strong> Busy</strong>.
+                </p>
+
+              </div>
+
+              <button
+                type="button"
+                className="assign-delivery-button"
+                onClick={handleAssignDelivery}
+                disabled={
+                  assignmentLoading ||
+                  deliveryLoading ||
+                  !selectedRequestId ||
+                  !selectedVolunteerId ||
+                  !selectedRecipientId
+                }
+              >
+
+                {assignmentLoading
+                  ? "Assigning Delivery..."
+                  : "🚚 Assign Delivery"}
+
+              </button>
+
+            </div>
+
+          )}
+
+        </section>
+
+        {/* ==================================================
+            DELIVERY STATUS
+        ================================================== */}
+
         <section
           className="dashboard-card"
           id="deliveries"
@@ -1638,6 +2532,10 @@ function Admin() {
           )}
 
         </section>
+
+        {/* ==================================================
+            RECENT REQUESTS
+        ================================================== */}
 
         <section className="dashboard-card">
 
@@ -1798,6 +2696,10 @@ function Admin() {
           )}
 
         </section>
+
+        {/* ==================================================
+            DATABASE FEATURES
+        ================================================== */}
 
         <section className="database-features-section">
 
@@ -2128,6 +3030,10 @@ function Admin() {
 
         </section>
 
+        {/* ==================================================
+            TRANSACTION DEMO
+        ================================================== */}
+
         <section className="transaction-section">
 
           <div className="dashboard-card transaction-card">
@@ -2201,11 +3107,6 @@ function Admin() {
                   )}
 
                 </div>
-
-                {/* ==================================================
-                    ONLY FINAL DATABASE RESULT IS SHOWN
-                    The 13-row SQL execution log has been removed.
-                   ================================================== */}
 
                 <div className="transaction-final-result">
 
@@ -2314,6 +3215,10 @@ function Admin() {
           </div>
 
         </section>
+
+        {/* ==================================================
+            FOOTER
+        ================================================== */}
 
         <footer className="admin-footer">
 
