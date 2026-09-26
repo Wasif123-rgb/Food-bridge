@@ -51,6 +51,16 @@ Route::middleware('auth:sanctum')->group(function () {
         [AdminController::class, 'dashboard']
     );
 
+    Route::get(
+        '/admin/delivery-options',
+        [AdminController::class, 'deliveryOptions']
+    );
+
+    Route::get(
+        '/admin/food-requests/{requestId}/recipients',
+        [AdminController::class, 'recipientsForRequest']
+    );
+
     Route::put(
         '/admin/ngos/{id}/verify',
         [AdminController::class, 'verifyNgo']
@@ -156,16 +166,57 @@ Route::middleware('auth:sanctum')->group(function () {
         [NgoController::class, 'requestFood']
     );
 
-    Route::get('/ngo/recipients', [RecipientController::class, 'index']);
-    Route::post('/ngo/recipients', [RecipientController::class, 'store']);
-    Route::get('/ngo/recipients/{recipientNo}', [RecipientController::class, 'show']);
-    Route::patch('/ngo/recipients/{recipientNo}', [RecipientController::class, 'update']);
-    Route::get('/ngo/recipients/{recipientNo}/deliveries', [RecipientController::class, 'deliveries']);
+    Route::get(
+        '/ngo/recipients',
+        [RecipientController::class, 'index']
+    );
 
-    Route::get('/recipient/profile', [RecipientController::class, 'currentProfile']);
-    Route::post('/recipient/profile', [RecipientController::class, 'createCurrentProfile']);
-    Route::patch('/recipient/profile', [RecipientController::class, 'updateCurrentProfile']);
-    Route::get('/recipient/ngos', [RecipientController::class, 'verifiedNgos']);
-    Route::get('/recipient/deliveries', [RecipientController::class, 'currentDeliveries']);
+    Route::post(
+        '/ngo/recipients',
+        [RecipientController::class, 'store']
+    );
+
+    Route::get(
+        '/ngo/recipients/{recipientNo}',
+        [RecipientController::class, 'show']
+    );
+
+    Route::patch(
+        '/ngo/recipients/{recipientNo}',
+        [RecipientController::class, 'update']
+    );
+
+    Route::get(
+        '/ngo/recipients/{recipientNo}/deliveries',
+        [RecipientController::class, 'deliveries']
+    );
+
+
+    // ==================== RECIPIENT ====================
+
+    Route::get(
+        '/recipient/profile',
+        [RecipientController::class, 'currentProfile']
+    );
+
+    Route::post(
+        '/recipient/profile',
+        [RecipientController::class, 'createCurrentProfile']
+    );
+
+    Route::patch(
+        '/recipient/profile',
+        [RecipientController::class, 'updateCurrentProfile']
+    );
+
+    Route::get(
+        '/recipient/ngos',
+        [RecipientController::class, 'verifiedNgos']
+    );
+
+    Route::get(
+        '/recipient/deliveries',
+        [RecipientController::class, 'currentDeliveries']
+    );
 
 });
