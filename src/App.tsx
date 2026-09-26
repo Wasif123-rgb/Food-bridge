@@ -9,6 +9,7 @@ import ProtectedRoute from "./pages/Auth/ProtectedRoute";
 import NgoPage from "./pages/NGO/NgoPage";
 import Admin from "./pages/Admin/Admin";
 import RecipientPage from "./pages/Recipient/RecipientPage";
+import FeedbackPage from "./pages/Feedback/FeedbackPage";
 
 function App() {
   return (
@@ -61,6 +62,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="recipient">
               <RecipientPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/feedback/:deliveryId"
+          element={
+            <ProtectedRoute requiredRole="recipient">
+              <FeedbackPage />
             </ProtectedRoute>
           }
         />

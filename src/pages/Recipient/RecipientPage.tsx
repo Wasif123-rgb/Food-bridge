@@ -297,7 +297,14 @@ export default function RecipientPage() {
                           <p>{delivery.food_name} · {delivery.quantity} {delivery.unit}</p>
                           <small>Request #{delivery.request_id} · Volunteer: {delivery.volunteer_name || "Not assigned"}</small>
                           <small>Pickup: {displayDate(delivery.pickup_time)} · Delivered: {displayDate(delivery.delivered_at)}</small>
-                          {Boolean(delivery.can_submit_feedback) && <em>Eligible for feedback</em>}
+                          {Boolean(delivery.can_submit_feedback) && (
+                            <Link
+                              className="recipient-feedback-button"
+                              to={`/feedback/${delivery.delivery_id}`}
+                            >
+                              Give Feedback
+                            </Link>
+                          )}
                         </div>
                       ))}
                     </div>

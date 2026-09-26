@@ -33,3 +33,25 @@
 .recipient-delivery { padding:13px; border-radius:12px; background:#f5faf6; }.recipient-delivery span { color:#11663d; font-size:.75rem; font-weight:800; }.recipient-delivery p { margin:8px 0; }.recipient-delivery small { display:block; margin-top:4px; color:#617167; }.recipient-delivery em { display:inline-block; margin-top:8px; color:#11663d; font-size:.75rem; font-weight:800; font-style:normal; }
 .recipient-state { padding:38px; border:1px dashed #16834b66; border-radius:20px; background:#ffffffcc; text-align:center; }.recipient-state h3 { margin:0 0 8px; }.recipient-state p { margin:0; color:#617167; }
 @media(max-width:760px){.recipient-form-grid,.recipient-grid{grid-template-columns:1fr}.recipient-wide{grid-column:auto}.recipient-section-heading,.recipient-list-heading{align-items:flex-start;flex-direction:column}.recipient-main{width:calc(100% - 28px);padding-top:40px}.recipient-form-card{padding:20px 16px}}
+.recipient-feedback-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+  padding: 9px 13px;
+  border: 1px solid #16834b55;
+  border-radius: 9px;
+  background: #16834b;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
+}
+
+.recipient-feedback-button:hover {
+  background: #11663d;
+  transform: translateY(-1px);
+}
