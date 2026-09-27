@@ -202,6 +202,10 @@ Route::middleware('auth:sanctum')->group(function () {
         '/ngo/requests',
         [NgoController::class, 'requestFood']
     );
+    Route::get(
+    '/ngo/request-status-history',
+    [NgoController::class, 'requestStatusHistory']
+);
 
     Route::get(
         '/ngo/recipients',

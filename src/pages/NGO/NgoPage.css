@@ -506,3 +506,94 @@
     padding: 8px 12px;
   }
 }
+/* =========================================================
+   NGO Request Status History
+   Shows rows created automatically by database triggers.
+   ========================================================= */
+
+.ngo-history-intro {
+  margin: 6px 0 0;
+  max-width: 720px;
+  color: #667085;
+  line-height: 1.6;
+}
+
+.ngo-trigger-list {
+  display: grid;
+  gap: 14px;
+}
+
+.ngo-trigger-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid #dce8df;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.ngo-trigger-marker {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #eaf7ee;
+  color: #16794a;
+  font-weight: 800;
+}
+
+.ngo-trigger-content {
+  min-width: 0;
+}
+
+.ngo-trigger-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.ngo-trigger-heading h3 {
+  margin: 0 0 4px;
+}
+
+.ngo-trigger-heading p,
+.ngo-trigger-content p {
+  margin: 4px 0;
+}
+
+.ngo-trigger-badge {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef8f1;
+  color: #176c45;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ngo-trigger-action {
+  display: block;
+  margin: 8px 0;
+  color: #1f2937;
+}
+
+.ngo-trigger-content code {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #f4f6f5;
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .ngo-trigger-card {
+    grid-template-columns: 1fr;
+  }
+
+  .ngo-trigger-heading {
+    flex-direction: column;
+  }
+}
